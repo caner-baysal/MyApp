@@ -3,5 +3,5 @@ import avatar from "../assets/images/avatar.png";
 
 export default {
   splashPattern,
-  avatar,
+  avatar
 };

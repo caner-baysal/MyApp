@@ -43,7 +43,7 @@ export default function SubscriptionCard({ name, price, currency, icon, billing,
                                 Payment:
                             </Text>
                             <Text style={{ flex: 1, fontFamily: "sans-bold", color: "#081126" }} numberOfLines={1}>
-                                {paymentMethod?.trim()}
+                                {paymentMethod?.trim() ?? "N/A"}
                             </Text>
                         </View>
 
@@ -52,7 +52,7 @@ export default function SubscriptionCard({ name, price, currency, icon, billing,
                                 Category:
                             </Text>
                             <Text style={{ flex: 1, fontFamily: "sans-bold", color: "#081126" }} numberOfLines={1}>
-                                {category?.trim() || plan?.trim()}
+                                {category?.trim() || plan?.trim() || "N/A"}
                             </Text>
                         </View>
 
@@ -61,7 +61,7 @@ export default function SubscriptionCard({ name, price, currency, icon, billing,
                                 Started:
                             </Text>
                             <Text style={{ flex: 1, fontFamily: "sans-bold", color: "#081126" }} numberOfLines={1}>
-                                {startDate ? formatSubscriptionDateTime(startDate) : ""}
+                                {startDate ? formatSubscriptionDateTime(startDate) : "N/A"}
                             </Text>
                         </View>
 
@@ -70,7 +70,7 @@ export default function SubscriptionCard({ name, price, currency, icon, billing,
                                 Renewal Date:
                             </Text>
                             <Text style={{ flex: 1, fontFamily: "sans-bold", color: "#081126" }} numberOfLines={1}>
-                                {renewalDate ? formatSubscriptionDateTime(renewalDate) : ""}
+                                {renewalDate ? formatSubscriptionDateTime(renewalDate) : "N/A"}
                             </Text>
                         </View>
 
@@ -79,7 +79,7 @@ export default function SubscriptionCard({ name, price, currency, icon, billing,
                                 Status:
                             </Text>
                             <Text style={{ flex: 1, fontFamily: "sans-bold", color: "#081126" }} numberOfLines={1}>
-                                {status ? formatStatusLabel(status) : ""}
+                                {status ? formatStatusLabel(status) : "N/A"}
                             </Text>
                         </View>
                     </View>

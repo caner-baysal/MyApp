@@ -8,7 +8,7 @@ export const tabs = [
 ];
 
 export const HOME_USER = {
-    name: "Adrian | JS Mastery",
+    name: "User Name",
 };
 
 export const HOME_BALANCE = {

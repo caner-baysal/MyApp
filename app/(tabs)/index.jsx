@@ -23,7 +23,6 @@ export default function Home() {
         padding: 5,
       }}
     >
-
       
       <FlatList
         ListHeaderComponent={() => (
