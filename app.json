@@ -17,7 +17,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true
@@ -39,16 +39,23 @@
           }
         }
       ],
-      ["expo-font", {"fonts":[
-        "./assets/fonts/PlusJakartaSans-Regular.ttf",
-        "./assets/fonts/PlusJakartaSans-Bold.ttf",
-        "./assets/fonts/PlusJakartaSans-SemiBold.ttf",
-        "./assets/fonts/PlusJakartaSans-Medium.ttf",
-        "./assets/fonts/PlusJakartaSans-ExtraBold.ttf",
-        "./assets/fonts/PlusJakartaSans-Light.ttf",
-        "./assets/fonts/PlusJakartaSans-ExtraLight.ttf",
-        "./assets/fonts/PlusJakartaSans-Thin.ttf"
-      ]}]
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/PlusJakartaSans-Regular.ttf",
+            "./assets/fonts/PlusJakartaSans-Bold.ttf",
+            "./assets/fonts/PlusJakartaSans-SemiBold.ttf",
+            "./assets/fonts/PlusJakartaSans-Medium.ttf",
+            "./assets/fonts/PlusJakartaSans-ExtraBold.ttf",
+            "./assets/fonts/PlusJakartaSans-Light.ttf",
+            "./assets/fonts/PlusJakartaSans-ExtraLight.ttf",
+            "./assets/fonts/PlusJakartaSans-Thin.ttf"
+          ]
+        }
+      ],
+      "@clerk/expo",
+      "expo-secure-store"
     ]
   }
 }
