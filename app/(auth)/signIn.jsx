@@ -46,10 +46,8 @@ export default function SignIn() {
           navigate: ({ session }) => {
             if (session?.currentTask) {
               console.log("Session task:", session.currentTask);
-              return;
             }
 
-            router.replace("/(tabs)");
           },
         });
       } else {
@@ -280,7 +278,7 @@ export default function SignIn() {
                 justifyContent: "center",
                 minHeight: 58,
               },
-              (!signIn ||!formIsValid || isSubmitting) && {
+              (!signIn || !formIsValid || isSubmitting) && {
                 opacity: 0.55,
               },
               pressed && {

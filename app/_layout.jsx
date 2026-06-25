@@ -1,4 +1,4 @@
-import { ClerkProvider } from "@clerk/expo";
+import { ClerkProvider, useAuth } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
 import { Stack } from "expo-router";
 import { useFonts } from "expo-font";
@@ -13,7 +13,9 @@ if (!publishableKey) {
   throw new Error("Missing EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY in .env");
 }
 
-export default function Layout() {
+function RootNavigator() {
+  const { isLoaded: authLoaded } = useAuth();
+
   const [fontsLoaded] = useFonts({
     "sans-regular": require("../assets/fonts/PlusJakartaSans-Regular.ttf"),
     "sans-bold": require("../assets/fonts/PlusJakartaSans-Bold.ttf"),
@@ -24,16 +26,26 @@ export default function Layout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded) {
+    if (fontsLoaded && authLoaded) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded]);
+  }, [fontsLoaded, authLoaded]);
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded || !authLoaded) return null;
 
   return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="(auth)" />
+      <Stack.Screen name="onboarding" />
+    </Stack>
+  );
+}
+
+export default function Layout() {
+  return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <Stack screenOptions={{ headerShown: false }} />
+      <RootNavigator />
     </ClerkProvider>
   );
 }

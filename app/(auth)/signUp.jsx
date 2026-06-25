@@ -15,7 +15,7 @@ import {
 } from "react-native";
 
 export default function SignUp() {
-  const { signUp, setActive } = useSignUp();
+  const { signUp } = useSignUp();
   const router = useRouter();
 
   const [emailAddress, setEmailAddress] = useState("");
@@ -108,7 +108,7 @@ export default function SignUp() {
               return;
             }
 
-            router.replace("/(tabs)");
+            router.replace("/");
           },
         });
       } else {
