@@ -10,10 +10,22 @@ import ListHeading from "../../components/ListHeading";
 import UpcomingSubscriptionCard from "../../components/UpcomingSubscriptionCard";
 import SubscriptionCard from "../../components/SubscriptionCard";
 import { useState } from "react";
+import CreateSubscriptionModal from "../../components/CreateSubscriptionModal";
 
 export default function Home() {
   const [expandedSubscriptionId, setExpandedSubscriptionId] = useState(null);
   const { user } = useUser();
+  const [subscriptions, setSubscriptions] = useState(HOME_SUBSCRIPTIONS);
+  const [createModalVisible, setCreateModalVisible] = useState(false);
+
+  const handleCreateSubscription = (subscription) => {
+    setSubscriptions((currentSubscriptions) => [
+      subscription,
+      ...currentSubscriptions,
+    ]);
+
+    setExpandedSubscriptionId(subscription.id);
+  };
 
   const displayName =
     user?.fullName ||
@@ -97,16 +109,17 @@ export default function Home() {
                   {displayName}
                 </Text>
               </View>
-
-              <Image
-                source={icons.add}
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderWidth: 1,
-                  borderRadius: 9999,
-                }}
-              />
+              <Pressable onPress={() => setCreateModalVisible(true)}>
+                <Image
+                  source={icons.add}
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderWidth: 1,
+                    borderRadius: 9999,
+                  }}
+                />
+              </Pressable>
             </View>
 
             <View
@@ -187,7 +200,7 @@ export default function Home() {
             <ListHeading title="All Subscriptions" />
           </>
         )}
-        data={HOME_SUBSCRIPTIONS}
+        data={subscriptions}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <SubscriptionCard
@@ -216,6 +229,11 @@ export default function Home() {
           </Text>
         )}
         contentContainerStyle={{ paddingBottom: 120 }}
+      />
+      <CreateSubscriptionModal
+        visible={createModalVisible}
+        onClose={() => setCreateModalVisible(false)}
+        onCreate={handleCreateSubscription}
       />
     </SafeAreaView>
   );
