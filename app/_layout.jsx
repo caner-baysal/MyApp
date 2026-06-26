@@ -4,6 +4,7 @@ import { Stack } from "expo-router";
 import { useFonts } from "expo-font";
 import { useEffect } from "react";
 import * as SplashScreen from "expo-splash-screen";
+import { SubscriptionsProvider } from "../context/SubscriptionsContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -34,11 +35,13 @@ function RootNavigator() {
   if (!fontsLoaded || !authLoaded) return null;
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="onboarding" />
-    </Stack>
+    <SubscriptionsProvider>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="onboarding" />
+      </Stack>
+    </SubscriptionsProvider>
   );
 }
 

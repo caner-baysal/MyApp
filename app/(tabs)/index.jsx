@@ -2,28 +2,53 @@ import { Text, View, Image, FlatList, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useUser } from "@clerk/expo";
 import { colors } from "../../constants/theme";
-import { HOME_BALANCE, HOME_SUBSCRIPTIONS, UPCOMING_SUBSCRIPTIONS } from "../../constants/data";
+import { HOME_BALANCE } from "../../constants/data";
 import { icons } from "../../constants/icons";
 import { formatCurrency } from "../../constants/utils";
 import dayjs from "dayjs";
 import ListHeading from "../../components/ListHeading";
 import UpcomingSubscriptionCard from "../../components/UpcomingSubscriptionCard";
 import SubscriptionCard from "../../components/SubscriptionCard";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import CreateSubscriptionModal from "../../components/CreateSubscriptionModal";
+import { useSubscriptions } from "../../context/SubscriptionsContext";
 
 export default function Home() {
   const [expandedSubscriptionId, setExpandedSubscriptionId] = useState(null);
   const { user } = useUser();
-  const [subscriptions, setSubscriptions] = useState(HOME_SUBSCRIPTIONS);
+  const { subscriptions, addSubscription } = useSubscriptions();
   const [createModalVisible, setCreateModalVisible] = useState(false);
 
-  const handleCreateSubscription = (subscription) => {
-    setSubscriptions((currentSubscriptions) => [
-      subscription,
-      ...currentSubscriptions,
-    ]);
+  const upcomingSubscriptions = useMemo(() => {
+    const today = dayjs().startOf("day");
 
+    return subscriptions
+      .map((subscription) => {
+        const renewalDate = dayjs(subscription.renewalDate);
+
+        if (!renewalDate.isValid()) {
+          return null;
+        }
+
+        const daysLeft = renewalDate.startOf("day").diff(today, "day");
+
+        return {
+          ...subscription,
+          daysLeft,
+        };
+      })
+      .filter((subscription) => {
+        if (!subscription) return false;
+        if (subscription.status && subscription.status !== "active") return false;
+
+        return subscription.daysLeft >= 0 && subscription.daysLeft <= 30;
+      })
+      .sort((a, b) => a.daysLeft - b.daysLeft)
+      .slice(0, 5);
+  }, [subscriptions]);
+
+  const handleCreateSubscription = (subscription) => {
+    addSubscription(subscription);
     setExpandedSubscriptionId(subscription.id);
   };
 
@@ -177,7 +202,7 @@ export default function Home() {
               <ListHeading title="Upcoming" />
 
               <FlatList
-                data={UPCOMING_SUBSCRIPTIONS}
+                data={upcomingSubscriptions}
                 renderItem={({ item }) => <UpcomingSubscriptionCard {...item} />}
                 keyExtractor={(item) => item.id}
                 horizontal
@@ -191,7 +216,7 @@ export default function Home() {
                       color: "rgba(0, 0, 0, 0.6)",
                     }}
                   >
-                    No upcoming renewals yet.
+                    No renewals in the next 30 days.
                   </Text>
                 )}
               />

@@ -5,6 +5,7 @@ import {
     Modal,
     Platform,
     Pressable,
+    ScrollView,
     Text,
     TextInput,
     View,
@@ -143,175 +144,182 @@ export default function CreateSubscriptionModal({ visible, onClose, onCreate }) 
                             backgroundColor: colors.background,
                             borderTopLeftRadius: 28,
                             borderTopRightRadius: 28,
-                            padding: 24,
-                            paddingBottom: 36,
                         }}
                     >
-                        <View
-                            style={{
-                                flexDirection: "row",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                marginBottom: 24,
+                        <ScrollView
+                            keyboardShouldPersistTaps="handled"
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={{
+                                padding: 24,
+                                paddingBottom: 36,
                             }}
                         >
-                            <Text
+                            <View
                                 style={{
-                                    fontSize: 24,
-                                    fontFamily: "sans-bold",
-                                    color: colors.primary,
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    marginBottom: 24,
                                 }}
                             >
-                                New Subscription
+                                <Text
+                                    style={{
+                                        fontSize: 24,
+                                        fontFamily: "sans-bold",
+                                        color: colors.primary,
+                                    }}
+                                >
+                                    New Subscription
+                                </Text>
+
+                                <Pressable
+                                    onPress={onClose}
+                                    style={{
+                                        width: 36,
+                                        height: 36,
+                                        borderRadius: 9999,
+                                        backgroundColor: colors.card,
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <Text style={{ fontSize: 20, color: colors.primary }}>x</Text>
+                                </Pressable>
+                            </View>
+
+                            <Text style={{ fontFamily: "sans-bold", color: colors.primary, marginBottom: 8 }}>
+                                Name
                             </Text>
+                            <TextInput
+                                value={name}
+                                onChangeText={setName}
+                                placeholder="Netflix, Spotify, Claude..."
+                                placeholderTextColor="rgba(8, 17, 38, 0.45)"
+                                style={{
+                                    borderWidth: 1,
+                                    borderColor: colors.border,
+                                    borderRadius: 16,
+                                    paddingHorizontal: 16,
+                                    paddingVertical: 14,
+                                    fontSize: 16,
+                                    fontFamily: "sans-semibold",
+                                    color: colors.primary,
+                                    backgroundColor: colors.card,
+                                    marginBottom: 18,
+                                }}
+                            />
+
+                            <Text style={{ fontFamily: "sans-bold", color: colors.primary, marginBottom: 8 }}>
+                                Price
+                            </Text>
+                            <TextInput
+                                value={price}
+                                onChangeText={setPrice}
+                                placeholder="9.99"
+                                placeholderTextColor="rgba(8, 17, 38, 0.45)"
+                                keyboardType="decimal-pad"
+                                style={{
+                                    borderWidth: 1,
+                                    borderColor: colors.border,
+                                    borderRadius: 16,
+                                    paddingHorizontal: 16,
+                                    paddingVertical: 14,
+                                    fontSize: 16,
+                                    fontFamily: "sans-semibold",
+                                    color: colors.primary,
+                                    backgroundColor: colors.card,
+                                    marginBottom: 18,
+                                }}
+                            />
+
+                            <Text style={{ fontFamily: "sans-bold", color: colors.primary, marginBottom: 10 }}>
+                                Frequency
+                            </Text>
+                            <View style={{ flexDirection: "row", gap: 10, marginBottom: 18 }}>
+                                {frequencies.map((item) => {
+                                    const active = frequency === item;
+
+                                    return (
+                                        <Pressable
+                                            key={item}
+                                            onPress={() => setFrequency(item)}
+                                            style={{
+                                                flex: 1,
+                                                paddingVertical: 12,
+                                                borderRadius: 9999,
+                                                alignItems: "center",
+                                                backgroundColor: active ? colors.primary : colors.card,
+                                                borderWidth: 1,
+                                                borderColor: active ? colors.primary : colors.border,
+                                            }}
+                                        >
+                                            <Text
+                                                style={{
+                                                    color: active ? "#ffffff" : colors.primary,
+                                                    fontFamily: "sans-bold",
+                                                }}
+                                            >
+                                                {item}
+                                            </Text>
+                                        </Pressable>
+                                    );
+                                })}
+                            </View>
+
+                            <Text style={{ fontFamily: "sans-bold", color: colors.primary, marginBottom: 10 }}>
+                                Category
+                            </Text>
+                            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 24 }}>
+                                {categories.map((item) => {
+                                    const active = category === item;
+
+                                    return (
+                                        <Pressable
+                                            key={item}
+                                            onPress={() => setCategory(item)}
+                                            style={{
+                                                paddingVertical: 9,
+                                                paddingHorizontal: 12,
+                                                borderRadius: 9999,
+                                                backgroundColor: active ? colors.accent : colors.card,
+                                                borderWidth: 1,
+                                                borderColor: active ? colors.accent : colors.border,
+                                            }}
+                                        >
+                                            <Text
+                                                style={{
+                                                    color: active ? "#ffffff" : colors.primary,
+                                                    fontSize: 13,
+                                                    fontFamily: "sans-semibold",
+                                                }}
+                                            >
+                                                {item}
+                                            </Text>
+                                        </Pressable>
+                                    );
+                                })}
+                            </View>
 
                             <Pressable
-                                onPress={onClose}
+                                onPress={handleSubmit}
                                 style={{
-                                    width: 36,
-                                    height: 36,
-                                    borderRadius: 9999,
-                                    backgroundColor: colors.card,
+                                    backgroundColor: colors.accent,
+                                    borderRadius: 18,
+                                    paddingVertical: 17,
                                     alignItems: "center",
-                                    justifyContent: "center",
                                 }}
                             >
-                                <Text style={{ fontSize: 20, color: colors.primary }}>x</Text>
+                                <Text
+                                    style={{
+                                        color: "#ffffff",
+                                        fontSize: 17,
+                                        fontFamily: "sans-bold",
+                                    }}
+                                >
+                                    Create subscription
+                                </Text>
                             </Pressable>
-                        </View>
-
-                        <Text style={{ fontFamily: "sans-bold", color: colors.primary, marginBottom: 8 }}>
-                            Name
-                        </Text>
-                        <TextInput
-                            value={name}
-                            onChangeText={setName}
-                            placeholder="Netflix, Spotify, Claude..."
-                            placeholderTextColor="rgba(8, 17, 38, 0.45)"
-                            style={{
-                                borderWidth: 1,
-                                borderColor: colors.border,
-                                borderRadius: 16,
-                                paddingHorizontal: 16,
-                                paddingVertical: 14,
-                                fontSize: 16,
-                                fontFamily: "sans-semibold",
-                                color: colors.primary,
-                                backgroundColor: colors.card,
-                                marginBottom: 18,
-                            }}
-                        />
-
-                        <Text style={{ fontFamily: "sans-bold", color: colors.primary, marginBottom: 8 }}>
-                            Price
-                        </Text>
-                        <TextInput
-                            value={price}
-                            onChangeText={setPrice}
-                            placeholder="9.99"
-                            placeholderTextColor="rgba(8, 17, 38, 0.45)"
-                            keyboardType="decimal-pad"
-                            style={{
-                                borderWidth: 1,
-                                borderColor: colors.border,
-                                borderRadius: 16,
-                                paddingHorizontal: 16,
-                                paddingVertical: 14,
-                                fontSize: 16,
-                                fontFamily: "sans-semibold",
-                                color: colors.primary,
-                                backgroundColor: colors.card,
-                                marginBottom: 18,
-                            }}
-                        />
-
-                        <Text style={{ fontFamily: "sans-bold", color: colors.primary, marginBottom: 10 }}>
-                            Frequency
-                        </Text>
-                        <View style={{ flexDirection: "row", gap: 10, marginBottom: 18 }}>
-                            {frequencies.map((item) => {
-                                const active = frequency === item;
-
-                                return (
-                                    <Pressable
-                                        key={item}
-                                        onPress={() => setFrequency(item)}
-                                        style={{
-                                            flex: 1,
-                                            paddingVertical: 12,
-                                            borderRadius: 9999,
-                                            alignItems: "center",
-                                            backgroundColor: active ? colors.primary : colors.card,
-                                            borderWidth: 1,
-                                            borderColor: active ? colors.primary : colors.border,
-                                        }}
-                                    >
-                                        <Text
-                                            style={{
-                                                color: active ? "#ffffff" : colors.primary,
-                                                fontFamily: "sans-bold",
-                                            }}
-                                        >
-                                            {item}
-                                        </Text>
-                                    </Pressable>
-                                );
-                            })}
-                        </View>
-
-                        <Text style={{ fontFamily: "sans-bold", color: colors.primary, marginBottom: 10 }}>
-                            Category
-                        </Text>
-                        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 24 }}>
-                            {categories.map((item) => {
-                                const active = category === item;
-
-                                return (
-                                    <Pressable
-                                        key={item}
-                                        onPress={() => setCategory(item)}
-                                        style={{
-                                            paddingVertical: 9,
-                                            paddingHorizontal: 12,
-                                            borderRadius: 9999,
-                                            backgroundColor: active ? colors.accent : colors.card,
-                                            borderWidth: 1,
-                                            borderColor: active ? colors.accent : colors.border,
-                                        }}
-                                    >
-                                        <Text
-                                            style={{
-                                                color: active ? "#ffffff" : colors.primary,
-                                                fontSize: 13,
-                                                fontFamily: "sans-semibold",
-                                            }}
-                                        >
-                                            {item}
-                                        </Text>
-                                    </Pressable>
-                                );
-                            })}
-                        </View>
-
-                        <Pressable
-                            onPress={handleSubmit}
-                            style={{
-                                backgroundColor: colors.accent,
-                                borderRadius: 18,
-                                paddingVertical: 17,
-                                alignItems: "center",
-                            }}
-                        >
-                            <Text
-                                style={{
-                                    color: "#ffffff",
-                                    fontSize: 17,
-                                    fontFamily: "sans-bold",
-                                }}
-                            >
-                                Create subscription
-                            </Text>
-                        </Pressable>
+                        </ScrollView>
                     </View>
                 </KeyboardAvoidingView>
             </View>

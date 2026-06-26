@@ -47,18 +47,15 @@ export default function SignIn() {
             if (session?.currentTask) {
               console.log("Session task:", session.currentTask);
             }
-
           },
         });
+
+        router.replace("/");
       } else {
         console.log("Sign-in not complete:", signIn);
         setErrorMessage("Please complete the remaining sign in steps.");
       }
     } catch (error) {
-      console.log("Raw sign in error:", error);
-      console.log("Sign in error message:", error?.message);
-      console.log("Sign in error errors:", error?.errors);
-
       const message =
         error?.errors?.[0]?.longMessage ||
         error?.errors?.[0]?.message ||
