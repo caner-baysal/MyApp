@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
     Alert,
     KeyboardAvoidingView,
@@ -15,6 +15,8 @@ import { icons } from "../constants/icons";
 import { colors } from "../constants/theme";
 
 const frequencies = ["Monthly", "Yearly"];
+
+const currencies = ["USD", "EUR", "TRY", "GBP", "CAD", "AUD"];
 
 const categories = [
     "Entertainment",
@@ -77,17 +79,48 @@ const getSubscriptionIcon = (subscriptionName) => {
     };
 };
 
-export default function CreateSubscriptionModal({ visible, onClose, onCreate }) {
+export default function CreateSubscriptionModal({
+    visible,
+    onClose,
+    onCreate,
+    onUpdate,
+    mode = "create",
+    initialSubscription = null,
+}) {
+    const isEditMode = mode === "edit";
+
     const [name, setName] = useState("");
     const [price, setPrice] = useState("");
     const [frequency, setFrequency] = useState("Monthly");
     const [category, setCategory] = useState("Entertainment");
+    const [currency, setCurrency] = useState("USD");
 
     const resetForm = () => {
         setName("");
         setPrice("");
         setFrequency("Monthly");
         setCategory("Entertainment");
+        setCurrency("USD");
+    };
+
+    useEffect(() => {
+        if (!visible) return;
+
+        if (isEditMode && initialSubscription) {
+            setName(initialSubscription.name || "");
+            setPrice(String(initialSubscription.price || ""));
+            setFrequency(initialSubscription.billing || "Monthly");
+            setCategory(initialSubscription.category || "Entertainment");
+            setCurrency(initialSubscription.currency || "USD");
+            return;
+        }
+
+        resetForm();
+    }, [visible, isEditMode, initialSubscription]);
+
+    const handleClose = () => {
+        resetForm();
+        onClose();
     };
 
     const handleSubmit = () => {
@@ -108,6 +141,23 @@ export default function CreateSubscriptionModal({ visible, onClose, onCreate }) 
         const renewalDate =
             frequency === "Monthly" ? now.add(1, "month") : now.add(1, "year");
 
+        if (isEditMode && initialSubscription) {
+            onUpdate(initialSubscription.id, {
+                name: trimmedName,
+                price: numericPrice,
+                billing: frequency,
+                plan: `${frequency} Plan`,
+                category,
+                renewalDate: renewalDate.toISOString(),
+                color: categoryColors[category] || categoryColors.Other,
+                icon: getSubscriptionIcon(trimmedName),
+                currency,
+            });
+
+            handleClose();
+            return;
+        }
+
         const newSubscription = {
             id: `${normalizeBrandKey(trimmedName)}-${Date.now()}`,
             icon: getSubscriptionIcon(trimmedName),
@@ -118,19 +168,23 @@ export default function CreateSubscriptionModal({ visible, onClose, onCreate }) 
             status: "active",
             startDate: now.toISOString(),
             price: numericPrice,
-            currency: "USD",
+            currency,
             billing: frequency,
             renewalDate: renewalDate.toISOString(),
             color: categoryColors[category] || categoryColors.Other,
         };
 
         onCreate(newSubscription);
-        resetForm();
-        onClose();
+        handleClose();
     };
 
     return (
-        <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+        <Modal
+            visible={visible}
+            transparent
+            animationType="slide"
+            onRequestClose={handleClose}
+        >
             <View
                 style={{
                     flex: 1,
@@ -141,6 +195,7 @@ export default function CreateSubscriptionModal({ visible, onClose, onCreate }) 
                 <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
                     <View
                         style={{
+                            maxHeight: "88%",
                             backgroundColor: colors.background,
                             borderTopLeftRadius: 28,
                             borderTopRightRadius: 28,
@@ -169,11 +224,11 @@ export default function CreateSubscriptionModal({ visible, onClose, onCreate }) 
                                         color: colors.primary,
                                     }}
                                 >
-                                    New Subscription
+                                    {isEditMode ? "Edit Subscription" : "New Subscription"}
                                 </Text>
 
                                 <Pressable
-                                    onPress={onClose}
+                                    onPress={handleClose}
                                     style={{
                                         width: 36,
                                         height: 36,
@@ -231,6 +286,41 @@ export default function CreateSubscriptionModal({ visible, onClose, onCreate }) 
                                     marginBottom: 18,
                                 }}
                             />
+
+                            <Text style={{ fontFamily: "sans-bold", color: colors.primary, marginBottom: 10 }}>
+                                Currency
+                            </Text>
+
+                            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 18 }}>
+                                {currencies.map((item) => {
+                                    const active = currency === item;
+
+                                    return (
+                                        <Pressable
+                                            key={item}
+                                            onPress={() => setCurrency(item)}
+                                            style={{
+                                                paddingVertical: 10,
+                                                paddingHorizontal: 14,
+                                                borderRadius: 9999,
+                                                backgroundColor: active ? colors.primary : colors.card,
+                                                borderWidth: 1,
+                                                borderColor: active ? colors.primary : colors.border,
+                                            }}
+                                        >
+                                            <Text
+                                                style={{
+                                                    color: active ? "#ffffff" : colors.primary,
+                                                    fontSize: 13,
+                                                    fontFamily: "sans-bold",
+                                                }}
+                                            >
+                                                {item}
+                                            </Text>
+                                        </Pressable>
+                                    );
+                                })}
+                            </View>
 
                             <Text style={{ fontFamily: "sans-bold", color: colors.primary, marginBottom: 10 }}>
                                 Frequency
@@ -316,7 +406,7 @@ export default function CreateSubscriptionModal({ visible, onClose, onCreate }) 
                                         fontFamily: "sans-bold",
                                     }}
                                 >
-                                    Create subscription
+                                    {isEditMode ? "Save changes" : "Create subscription"}
                                 </Text>
                             </Pressable>
                         </ScrollView>

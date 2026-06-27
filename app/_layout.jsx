@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import * as SplashScreen from "expo-splash-screen";
 import { SubscriptionsProvider } from "../context/SubscriptionsContext";
 
+
 SplashScreen.preventAutoHideAsync();
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
@@ -40,6 +41,8 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="onboarding" />
+        <Stack.Screen name="privacy-policy" />
+        <Stack.Screen name="terms-of-service" />
       </Stack>
     </SubscriptionsProvider>
   );

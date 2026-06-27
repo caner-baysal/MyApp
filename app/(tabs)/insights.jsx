@@ -1,21 +1,13 @@
-import { useMemo, useState } from "react";
-import { FlatList, Image, Text, View, Pressable } from "react-native";
+import { useMemo } from "react";
+import { FlatList, Image, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import dayjs from "dayjs";
 import { useSubscriptions } from "../../context/SubscriptionsContext";
 import { colors } from "../../constants/theme";
 import { formatCurrency } from "../../constants/utils";
 
-const weekDays = ["Mon", "Tue", "Wed", "Thr", "Fri", "Sat", "Sun"];
-
-const getDayIndex = (date) => {
-  const jsDay = dayjs(date).day();
-  return jsDay === 0 ? 6 : jsDay - 1;
-};
-
 export default function Insights() {
   const { subscriptions } = useSubscriptions();
-  const [selectedDayIndex, setSelectedDayIndex] = useState(dayjs().day() === 0 ? 6 : dayjs().day() - 1);
 
   const activeSubscriptions = useMemo(
     () =>
@@ -25,82 +17,93 @@ export default function Insights() {
     [subscriptions]
   );
 
-  const weeklyTotals = useMemo(() => {
-    const totals = Array(7).fill(0);
+  const pausedSubscriptions = useMemo(
+    () =>
+      subscriptions.filter((subscription) => subscription.status === "paused"),
+    [subscriptions]
+  );
 
-    activeSubscriptions.forEach((subscription) => {
+  const upcomingRenewals = useMemo(() => {
+    const today = dayjs().startOf("day");
+
+    return activeSubscriptions
+      .map((subscription) => {
+        const renewalDate = dayjs(subscription.renewalDate);
+
+        if (!renewalDate.isValid()) return null;
+
+        return {
+          ...subscription,
+          daysLeft: renewalDate.startOf("day").diff(today, "day"),
+        };
+      })
+      .filter((subscription) => subscription && subscription.daysLeft >= 0)
+      .sort((a, b) => a.daysLeft - b.daysLeft);
+  }, [activeSubscriptions]);
+
+  const renewalsThisMonth = useMemo(() => {
+    const startOfMonth = dayjs().startOf("month");
+    const endOfMonth = dayjs().endOf("month");
+
+    return activeSubscriptions.filter((subscription) => {
       const renewalDate = dayjs(subscription.renewalDate);
 
-      if (!renewalDate.isValid()) return;
-
-      const dayIndex = getDayIndex(renewalDate);
-      totals[dayIndex] += Number(subscription.price) || 0;
+      return (
+        renewalDate.isValid() &&
+        renewalDate.isAfter(startOfMonth.subtract(1, "day")) &&
+        renewalDate.isBefore(endOfMonth.add(1, "day"))
+      );
     });
-
-    return totals;
   }, [activeSubscriptions]);
 
-  const maxWeeklyTotal = Math.max(...weeklyTotals, 1);
-  const highlightedIndex = weeklyTotals.indexOf(maxWeeklyTotal);
+  const monthlySpendByCurrency = useMemo(() => {
+    return activeSubscriptions.reduce((totals, subscription) => {
+      const itemCurrency = subscription.currency || "USD";
+      const price = Number(subscription.price) || 0;
+      const billing = subscription.billing?.toLowerCase();
 
-  const getMonthlyEquivalentPrice = (subscription) => {
-    const price = Number(subscription.price) || 0;
-    const billing = subscription.billing?.toLowerCase();
+      const monthlyPrice = billing === "yearly" ? price / 12 : price;
 
-    if (billing === "yearly") {
-      return price / 12;
-    }
-
-    return price;
-  };
-
-  const getExpensesForMonth = (monthDate) => {
-    const monthEnd = monthDate.endOf("month");
-
-    return activeSubscriptions.reduce((total, subscription) => {
-      const startDate = dayjs(subscription.startDate);
-
-      if (startDate.isValid() && startDate.isAfter(monthEnd)) {
-        return total;
-      }
-
-      return total + getMonthlyEquivalentPrice(subscription);
-    }, 0);
-  };
-
-  const currentMonthExpenses = useMemo(() => {
-    return getExpensesForMonth(dayjs());
+      return {
+        ...totals,
+        [itemCurrency]: (totals[itemCurrency] || 0) + monthlyPrice,
+      };
+    }, {});
   }, [activeSubscriptions]);
 
-  const previousMonthExpenses = useMemo(() => {
-    return getExpensesForMonth(dayjs().subtract(1, "month"));
-  }, [activeSubscriptions]);
+  const monthlySpendRows = Object.entries(monthlySpendByCurrency);
+  const nextRenewal = upcomingRenewals[0];
 
-  const expenseChangeLabel = useMemo(() => {
-    if (previousMonthExpenses === 0 && currentMonthExpenses > 0) {
-      return "New";
-    }
-
-    if (previousMonthExpenses === 0) {
-      return "0%";
-    }
-
-    const change =
-      ((currentMonthExpenses - previousMonthExpenses) / previousMonthExpenses) *
-      100;
-
-    const sign = change > 0 ? "+" : "";
-
-    return `${sign}${change.toFixed(0)}%`;
-  }, [currentMonthExpenses, previousMonthExpenses]);
-
-  const historyItems = useMemo(() => {
-    return [...activeSubscriptions]
-      .sort((a, b) => dayjs(b.renewalDate).valueOf() - dayjs(a.renewalDate).valueOf())
-      .slice(0, 6);
-  }, [activeSubscriptions]);
-
-  const periodLabel = dayjs().format("MMMM YYYY");
+  const insightCards = [
+    {
+      label: "Active subscriptions",
+      value: String(activeSubscriptions.length),
+      detail:
+        pausedSubscriptions.length > 0
+          ? `${pausedSubscriptions.length} paused`
+          : "No paused subscriptions",
+    },
+    {
+      label: "Renewals this month",
+      value: String(renewalsThisMonth.length),
+      detail: dayjs().format("MMMM YYYY"),
+    },
+    {
+      label: "Next renewal",
+      value: nextRenewal ? nextRenewal.name : "None",
+      detail: nextRenewal
+        ? dayjs(nextRenewal.renewalDate).format("MMM D")
+        : "No upcoming renewals",
+    },
+    {
+      label: "Currencies tracked",
+      value: String(monthlySpendRows.length || 1),
+      detail:
+        monthlySpendRows.length > 0
+          ? monthlySpendRows.map(([currency]) => currency).join(", ")
+          : "USD",
+    },
+  ];
 
   return (
     <SafeAreaView
@@ -112,212 +115,90 @@ export default function Insights() {
       }}
     >
       <FlatList
-        data={historyItems}
+        data={upcomingRenewals.slice(0, 8)}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 120 }}
         ListHeaderComponent={() => (
           <>
-            <View
+            <Text
               style={{
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 34,
+                fontSize: 30,
+                fontFamily: "sans-extrabold",
+                color: colors.primary,
+                marginBottom: 18,
               }}
             >
-              <Text
-                style={{
-                  fontSize: 22,
-                  fontFamily: "sans-bold",
-                  color: colors.primary,
-                }}
-              >
-                Monthly Insights
-              </Text>
-            </View>
+              Insights
+            </Text>
 
             <View
               style={{
                 flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 18,
+                flexWrap: "wrap",
+                gap: 12,
+                marginBottom: 22,
               }}
             >
-              <Text
-                style={{
-                  fontSize: 22,
-                  fontFamily: "sans-bold",
-                  color: colors.primary,
-                }}
-              >
-                Upcoming
-              </Text>
-
-              <View
-                style={{
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  borderRadius: 9999,
-                  paddingHorizontal: 16,
-                  paddingVertical: 8,
-                }}
-              >
-                <Text
+              {insightCards.map((card) => (
+                <View
+                  key={card.label}
                   style={{
-                    fontSize: 15,
-                    fontFamily: "sans-semibold",
-                    color: colors.primary,
+                    width: "48%",
+                    minHeight: 128,
+                    borderRadius: 20,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    backgroundColor: colors.card,
+                    padding: 16,
+                    justifyContent: "space-between",
                   }}
                 >
-                  View all
-                </Text>
-              </View>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontFamily: "sans-semibold",
+                      color: colors.mutedForeground,
+                    }}
+                  >
+                    {card.label}
+                  </Text>
+
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      marginTop: 12,
+                      fontSize: 24,
+                      fontFamily: "sans-extrabold",
+                      color: colors.primary,
+                    }}
+                  >
+                    {card.value}
+                  </Text>
+
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      marginTop: 8,
+                      fontSize: 13,
+                      fontFamily: "sans-semibold",
+                      color: colors.mutedForeground,
+                    }}
+                  >
+                    {card.detail}
+                  </Text>
+                </View>
+              ))}
             </View>
 
             <View
               style={{
-                height: 266,
-                borderRadius: 18,
-                backgroundColor: colors.muted,
-                paddingHorizontal: 16,
-                paddingTop: 28,
-                paddingBottom: 16,
-                marginBottom: 20,
-              }}
-            >
-              <View
-                style={{
-                  flex: 1,
-                  flexDirection: "row",
-                  alignItems: "flex-end",
-                  justifyContent: "space-between",
-                }}
-              >
-                {weeklyTotals.map((amount, index) => {
-                  const active = index === selectedDayIndex && amount > 0;
-                  const height = Math.max(12, (amount / maxWeeklyTotal) * 170);
-
-                  return (
-                    <Pressable
-                      key={weekDays[index]}
-                      onPress={() => setSelectedDayIndex(index)}
-                      style={{
-                        alignItems: "center",
-                        justifyContent: "flex-end",
-                        flex: 1,
-                      }}
-                    >
-                      {active && (
-                        <View
-                          style={{
-                            backgroundColor: "#ffffff",
-                            borderRadius: 8,
-                            paddingHorizontal: 8,
-                            paddingVertical: 5,
-                            marginBottom: 8,
-                          }}
-                        >
-                          <Text
-                            style={{
-                              color: colors.accent,
-                              fontFamily: "sans-bold",
-                              fontSize: 12,
-                            }}
-                          >
-                            {formatCurrency(amount)}
-                          </Text>
-                        </View>
-                      )}
-
-                      <View
-                        style={{
-                          width: 12,
-                          height,
-                          borderRadius: 9999,
-                          backgroundColor: active ? colors.accent : colors.primary,
-                        }}
-                      />
-
-                      <Text
-                        style={{
-                          marginTop: 14,
-                          fontSize: 13,
-                          fontFamily: "sans-semibold",
-                          color: "rgba(8, 17, 38, 0.65)",
-                        }}
-                      >
-                        {weekDays[index]}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-
-            <View
-              style={{
+                borderRadius: 22,
                 borderWidth: 1,
                 borderColor: colors.border,
-                borderRadius: 16,
-                padding: 14,
-                marginBottom: 34,
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <View>
-                <Text
-                  style={{
-                    fontSize: 20,
-                    fontFamily: "sans-bold",
-                    color: colors.primary,
-                    marginBottom: 6,
-                  }}
-                >
-                  Expenses
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontFamily: "sans-semibold",
-                    color: colors.mutedForeground,
-                  }}
-                >
-                  {periodLabel}
-                </Text>
-              </View>
-
-              <View style={{ alignItems: "flex-end" }}>
-                <Text
-                  style={{
-                    fontSize: 20,
-                    fontFamily: "sans-extrabold",
-                    color: colors.primary,
-                    marginBottom: 6,
-                  }}
-                >
-                  -{formatCurrency(currentMonthExpenses)}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontFamily: "sans-semibold",
-                    color: colors.mutedForeground,
-                  }}
-                >
-
-                </Text>
-              </View>
-            </View>
-
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 18,
+                backgroundColor: colors.card,
+                padding: 16,
+                marginBottom: 28,
               }}
             >
               <Text
@@ -325,40 +206,92 @@ export default function Insights() {
                   fontSize: 22,
                   fontFamily: "sans-bold",
                   color: colors.primary,
+                  marginBottom: 6,
                 }}
               >
-                History
+                Monthly spend
               </Text>
 
-              <View
+              <Text
                 style={{
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  borderRadius: 9999,
-                  paddingHorizontal: 16,
-                  paddingVertical: 8,
+                  fontSize: 13,
+                  fontFamily: "sans-semibold",
+                  color: colors.mutedForeground,
+                  marginBottom: 16,
                 }}
               >
+                Grouped by currency. Exchange rates are not applied.
+              </Text>
+
+              {monthlySpendRows.length > 0 ? (
+                monthlySpendRows.map(([itemCurrency, amount]) => (
+                  <View
+                    key={itemCurrency}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      paddingVertical: 10,
+                      borderTopWidth: 1,
+                      borderTopColor: colors.border,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 16,
+                        fontFamily: "sans-bold",
+                        color: colors.primary,
+                      }}
+                    >
+                      {itemCurrency}
+                    </Text>
+
+                    <Text
+                      style={{
+                        fontSize: 18,
+                        fontFamily: "sans-extrabold",
+                        color: colors.primary,
+                      }}
+                    >
+                      {formatCurrency(amount, itemCurrency)}
+                    </Text>
+                  </View>
+                ))
+              ) : (
                 <Text
                   style={{
+                    paddingVertical: 12,
                     fontSize: 15,
-                    fontFamily: "sans-semibold",
-                    color: colors.primary,
+                    fontFamily: "sans-medium",
+                    color: colors.mutedForeground,
                   }}
                 >
-                  View all
+                  No active subscription spend yet.
                 </Text>
-              </View>
+              )}
             </View>
+
+            <Text
+              style={{
+                fontSize: 22,
+                fontFamily: "sans-bold",
+                color: colors.primary,
+                marginBottom: 16,
+              }}
+            >
+              Upcoming renewals
+            </Text>
           </>
         )}
-        renderItem={({ item, index }) => (
+        renderItem={({ item }) => (
           <View
             style={{
               borderRadius: 18,
               padding: 16,
-              marginBottom: 16,
-              backgroundColor: item.color || (index % 2 === 0 ? "#f5c542" : "#b8e8d0"),
+              marginBottom: 14,
+              backgroundColor: item.color || colors.card,
+              borderWidth: 1,
+              borderColor: colors.border,
               flexDirection: "row",
               alignItems: "center",
             }}
@@ -366,8 +299,8 @@ export default function Insights() {
             <Image
               source={item.icon}
               style={{
-                width: 56,
-                height: 56,
+                width: 52,
+                height: 52,
                 borderRadius: 12,
                 marginRight: 14,
               }}
@@ -394,7 +327,10 @@ export default function Insights() {
                   color: colors.mutedForeground,
                 }}
               >
-                {dayjs(item.renewalDate).format("MMM D, HH:mm")}
+                {dayjs(item.renewalDate).format("MMM D")} ·{" "}
+                {item.daysLeft === 0
+                  ? "Today"
+                  : `${item.daysLeft} days left`}
               </Text>
             </View>
 
@@ -407,17 +343,17 @@ export default function Insights() {
                   marginBottom: 6,
                 }}
               >
-                {formatCurrency(item.price, item.currency)}
+                {formatCurrency(item.price, item.currency || "USD")}
               </Text>
 
               <Text
                 style={{
-                  fontSize: 14,
+                  fontSize: 13,
                   fontFamily: "sans-semibold",
                   color: colors.mutedForeground,
                 }}
               >
-                per {item.billing?.toLowerCase() || "month"}
+                {item.billing || "Monthly"}
               </Text>
             </View>
           </View>
@@ -432,7 +368,7 @@ export default function Insights() {
               color: colors.mutedForeground,
             }}
           >
-            No payment history yet.
+            No upcoming renewals yet.
           </Text>
         )}
       />

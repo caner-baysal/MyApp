@@ -1,35 +1,48 @@
-import { useAuth, useUser } from "@clerk/expo";
-import { useRouter } from "expo-router";
-import { Alert, Image, Pressable, Text, View } from "react-native";
+import { useState } from "react";
+import {
+  Alert,
+  Image,
+  Pressable,
+  ScrollView,
+  Switch,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useClerk, useUser } from "@clerk/expo";
+import { useRouter } from "expo-router";
 import { colors } from "../../constants/theme";
 
 export default function Settings() {
   const router = useRouter();
-  const { signOut } = useAuth();
+  const { signOut } = useClerk();
   const { user } = useUser();
+
+  const [renewalReminders, setRenewalReminders] = useState(true);
 
   const displayName =
     user?.fullName ||
-    user?.firstName ||
+    user?.username ||
     user?.primaryEmailAddress?.emailAddress ||
-    "Signed in user";
+    "Subshelf User";
 
-  const joined = user?.createdAt
-    ? new Date(user.createdAt).toLocaleDateString()
-    : null;
+  const email = user?.primaryEmailAddress?.emailAddress || "No email connected";
 
-  const email = user?.primaryEmailAddress?.emailAddress;
-  const avatarUrl = user?.imageUrl;
+  const initials = displayName
+    .split(" ")
+    .map((word) => word[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   const handleSignOut = () => {
-    Alert.alert("Log out", "Are you sure you want to log out?", [
+    Alert.alert("Sign out", "Are you sure you want to sign out?", [
       {
         text: "Cancel",
         style: "cancel",
       },
       {
-        text: "Log out",
+        text: "Sign out",
         style: "destructive",
         onPress: async () => {
           await signOut();
@@ -43,126 +56,309 @@ export default function Settings() {
     <SafeAreaView
       style={{
         flex: 1,
-        backgroundColor: "#f8fafc",
-        padding: 20,
+        backgroundColor: colors.background,
       }}
     >
-      <Text
-        style={{
-          fontSize: 28,
-          fontFamily: "sans-bold",
-          color: colors.primary,
-          marginBottom: 24,
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          padding: 20,
+          paddingBottom: 120,
         }}
       >
-        Settings
-      </Text>
+        <Text
+          style={{
+            fontSize: 30,
+            fontFamily: "sans-extrabold",
+            color: colors.primary,
+            marginBottom: 20,
+          }}
+        >
+          Settings
+        </Text>
 
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          backgroundColor: "#fff8e7",
-          borderRadius: 16,
-          borderWidth: 1,
-          borderColor: "rgba(0, 0, 0, 0.1)",
-          padding: 16,
-          marginBottom: 20,
-        }}
-      >
-        {avatarUrl ? (
-          <Image
-            source={{ uri: avatarUrl }}
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 9999,
-            }}
-          />
-        ) : (
-          <View
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 9999,
-              backgroundColor: colors.accent,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Text
+        <View
+          style={{
+            borderRadius: 24,
+            borderWidth: 1,
+            borderColor: colors.border,
+            backgroundColor: colors.card,
+            padding: 18,
+            marginBottom: 20,
+            flexDirection: "row",
+            alignItems: "center",
+          }}
+        >
+          {user?.imageUrl ? (
+            <Image
+              source={{ uri: user.imageUrl }}
               style={{
-                color: "#ffffff",
-                fontSize: 22,
-                fontFamily: "sans-bold",
+                width: 64,
+                height: 64,
+                borderRadius: 9999,
+                backgroundColor: colors.muted,
+              }}
+            />
+          ) : (
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 9999,
+                backgroundColor: colors.accent,
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
-              {displayName.charAt(0).toUpperCase()}
+              <Text
+                style={{
+                  color: "#ffffff",
+                  fontSize: 22,
+                  fontFamily: "sans-extrabold",
+                }}
+              >
+                {initials}
+              </Text>
+            </View>
+          )}
+
+          <View style={{ marginLeft: 14, flex: 1 }}>
+            <Text
+              numberOfLines={1}
+              style={{
+                fontSize: 20,
+                fontFamily: "sans-bold",
+                color: colors.primary,
+              }}
+            >
+              {displayName}
             </Text>
-          </View>
-        )}
 
-        <View style={{ marginLeft: 14, flex: 1, minWidth: 0 }}>
-          <Text
-            numberOfLines={1}
-            style={{
-              fontSize: 18,
-              fontFamily: "sans-bold",
-              color: colors.primary,
-            }}
-          >
-            {displayName}
-          </Text>
-
-          {!!email && (
             <Text
               numberOfLines={1}
               style={{
                 marginTop: 4,
                 fontSize: 14,
                 fontFamily: "sans-medium",
-                color: "rgba(0, 0, 0, 0.6)",
+                color: colors.mutedForeground,
               }}
             >
               {email}
             </Text>
-          )}
-          {!!joined && (
-            <Text
-              numberOfLines={1}
-              style={{
-                marginTop: 4,
-                fontSize: 12,
-                fontFamily: "sans-medium",
-                color: "rgba(0, 0, 0, 0.6)",
-              }}
-            >
-              Joined {joined}
-            </Text>
-          )}
+          </View>
         </View>
 
-      </View>
+        <SettingsSection title="Notifications">
+          <SettingsSwitchRow
+            title="Renewal reminders"
+            description="Get reminded before subscriptions renew."
+            value={renewalReminders}
+            onValueChange={setRenewalReminders}
+          />
+        </SettingsSection>
 
-      <Pressable
-        onPress={handleSignOut}
-        style={{
-          backgroundColor: "#081126",
-          borderRadius: 14,
-          paddingVertical: 16,
-          alignItems: "center",
-        }}
-      >
-        <Text
+        <SettingsSection title="Legal">
+          <SettingsLinkRow
+            title="Privacy Policy"
+            onPress={() => router.push("/privacy-policy")}
+          />
+
+          <SettingsLinkRow
+            title="Terms of Service"
+            onPress={() => router.push("/terms-of-service")}
+          />
+        </SettingsSection>
+
+        <SettingsSection title="App">
+          <SettingsInfoRow title="Version" value="1.0.0" />
+        </SettingsSection>
+
+        <Pressable
+          onPress={handleSignOut}
           style={{
-            color: "#ffffff",
-            fontSize: 16,
-            fontFamily: "sans-semibold",
+            marginTop: 8,
+            borderRadius: 18,
+            backgroundColor: colors.primary,
+            paddingVertical: 16,
+            alignItems: "center",
           }}
         >
-          Log out
-        </Text>
-      </Pressable>
+          <Text
+            style={{
+              color: "#ffffff",
+              fontSize: 17,
+              fontFamily: "sans-bold",
+            }}
+          >
+            Sign out
+          </Text>
+        </Pressable>
+      </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function SettingsSection({ title, children }) {
+  return (
+    <View style={{ marginBottom: 20 }}>
+      <Text
+        style={{
+          fontSize: 20,
+          fontFamily: "sans-bold",
+          color: colors.primary,
+          marginBottom: 10,
+        }}
+      >
+        {title}
+      </Text>
+
+      <View
+        style={{
+          borderRadius: 24,
+          borderWidth: 1,
+          borderColor: colors.border,
+          backgroundColor: colors.card,
+          overflow: "hidden",
+        }}
+      >
+        {children}
+      </View>
+    </View>
+  );
+}
+
+function SettingsSwitchRow({ title, description, value, onValueChange }) {
+  return (
+    <View
+      style={{
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 16,
+      }}
+    >
+      <View style={{ flex: 1 }}>
+        <Text
+          style={{
+            fontSize: 16,
+            fontFamily: "sans-bold",
+            color: colors.primary,
+          }}
+        >
+          {title}
+        </Text>
+
+        <Text
+          style={{
+            marginTop: 4,
+            fontSize: 13,
+            fontFamily: "sans-medium",
+            color: colors.mutedForeground,
+          }}
+        >
+          {description}
+        </Text>
+      </View>
+
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        trackColor={{
+          false: colors.muted,
+          true: colors.subscription,
+        }}
+        thumbColor={value ? colors.primary : "#ffffff"}
+      />
+    </View>
+  );
+}
+
+function SettingsInfoRow({ title, value }) {
+  return (
+    <View
+      style={{
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 16,
+      }}
+    >
+      <Text
+        style={{
+          fontSize: 16,
+          fontFamily: "sans-bold",
+          color: colors.primary,
+        }}
+      >
+        {title}
+      </Text>
+
+      <Text
+        style={{
+          fontSize: 14,
+          fontFamily: "sans-semibold",
+          color: colors.mutedForeground,
+        }}
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function SettingsLinkRow({ title, value, onPress }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 16,
+      }}
+    >
+      <Text
+        style={{
+          fontSize: 16,
+          fontFamily: "sans-bold",
+          color: colors.primary,
+        }}
+      >
+        {title}
+      </Text>
+
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        {!!value && (
+          <Text
+            style={{
+              fontSize: 14,
+              fontFamily: "sans-semibold",
+              color: colors.mutedForeground,
+            }}
+          >
+            {value}
+          </Text>
+        )}
+
+        <Text
+          style={{
+            fontSize: 20,
+            fontFamily: "sans-bold",
+            color: colors.mutedForeground,
+          }}
+        >
+          ›
+        </Text>
+      </View>
+    </Pressable>
   );
 }

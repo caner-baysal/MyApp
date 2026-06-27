@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import {
+  Alert,
   FlatList,
   Pressable,
   Text,
@@ -8,21 +9,56 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SubscriptionCard from "../../../components/SubscriptionCard";
-import { HOME_SUBSCRIPTIONS } from "../../../constants/data";
+import CreateSubscriptionModal from "../../../components/CreateSubscriptionModal";
+import { useSubscriptions } from "../../../context/SubscriptionsContext";
 import { colors } from "../../../constants/theme";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import dayjs from "dayjs";
 
 export default function Subscriptions() {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedSubscriptionId, setExpandedSubscriptionId] = useState(null);
+  const [editingSubscription, setEditingSubscription] = useState(null);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const { filter } = useLocalSearchParams();
+  const router = useRouter();
+  const isUpcomingFilter = filter === "upcoming";
+
+  const {
+    subscriptions,
+    updateSubscription,
+    deleteSubscription,
+    setSubscriptionStatus,
+  } = useSubscriptions();
 
   const filteredSubscriptions = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
+    const today = dayjs().startOf("day");
+
+    const baseSubscriptions =
+      isUpcomingFilter
+        ? subscriptions.filter((subscription) => {
+          if (subscription.status && subscription.status !== "active") {
+            return false;
+          }
+
+          const renewalDate = dayjs(subscription.renewalDate);
+
+          if (!renewalDate.isValid()) {
+            return false;
+          }
+
+          const daysLeft = renewalDate.startOf("day").diff(today, "day");
+
+          return daysLeft >= 0 && daysLeft <= 30;
+        })
+        : subscriptions;
 
     if (!query) {
-      return HOME_SUBSCRIPTIONS;
+      return baseSubscriptions;
     }
 
-    return HOME_SUBSCRIPTIONS.filter((subscription) => {
+    return baseSubscriptions.filter((subscription) => {
       const searchableText = [
         subscription.name,
         subscription.plan,
@@ -38,11 +74,47 @@ export default function Subscriptions() {
 
       return searchableText.includes(query);
     });
-  }, [searchQuery]);
+  }, [searchQuery, subscriptions, isUpcomingFilter]);
 
   const clearSearch = () => {
     setSearchQuery("");
     setExpandedSubscriptionId(null);
+  };
+
+  const handleEditSubscription = (subscription) => {
+    setEditingSubscription(subscription);
+    setEditModalVisible(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setEditModalVisible(false);
+    setEditingSubscription(null);
+  };
+
+  const handleDeleteSubscription = (subscription) => {
+    Alert.alert(
+      "Delete subscription",
+      `Delete ${subscription.name}? This cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            deleteSubscription(subscription.id);
+
+            if (expandedSubscriptionId === subscription.id) {
+              setExpandedSubscriptionId(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleToggleStatus = (subscription) => {
+    const isActive = !subscription.status || subscription.status === "active";
+    setSubscriptionStatus(subscription.id, isActive ? "paused" : "active");
   };
 
   return (
@@ -55,16 +127,47 @@ export default function Subscriptions() {
       }}
     >
       <View style={{ marginBottom: 20 }}>
-        <Text
+        <View
           style={{
-            fontSize: 30,
-            fontFamily: "sans-extrabold",
-            color: colors.primary,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
             marginBottom: 8,
           }}
         >
-          Subscriptions
-        </Text>
+          <Text
+            style={{
+              fontSize: 30,
+              fontFamily: "sans-extrabold",
+              color: colors.primary,
+              flex: 1,
+            }}
+          >
+            {isUpcomingFilter ? "Upcoming Renewals" : "Subscriptions"}
+          </Text>
+
+          {isUpcomingFilter && (
+            <Pressable
+              onPress={() => router.replace("/subscriptions")}
+              style={{
+                borderRadius: 9999,
+                backgroundColor: colors.primary,
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+              }}
+            >
+              <Text
+                style={{
+                  color: "#ffffff",
+                  fontSize: 13,
+                  fontFamily: "sans-bold",
+                }}
+              >
+                Show all
+              </Text>
+            </Pressable>
+          )}
+        </View>
 
         <Text
           style={{
@@ -75,7 +178,9 @@ export default function Subscriptions() {
             marginBottom: 18,
           }}
         >
-          Search and review every plan you are tracking.
+          {isUpcomingFilter
+            ? "Renewals due in the next 30 days."
+            : "Search and review every plan you are tracking."}
         </Text>
 
         <View
@@ -155,6 +260,9 @@ export default function Subscriptions() {
                 currentId === item.id ? null : item.id
               )
             }
+            onEditPress={() => handleEditSubscription(item)}
+            onDeletePress={() => handleDeleteSubscription(item)}
+            onStatusPress={() => handleToggleStatus(item)}
           />
         )}
         extraData={expandedSubscriptionId}
@@ -196,6 +304,14 @@ export default function Subscriptions() {
             </Text>
           </View>
         )}
+      />
+
+      <CreateSubscriptionModal
+        visible={editModalVisible}
+        onClose={handleCloseEditModal}
+        onUpdate={updateSubscription}
+        mode="edit"
+        initialSubscription={editingSubscription}
       />
     </SafeAreaView>
   );

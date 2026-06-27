@@ -1,23 +1,34 @@
-import { Text, View, Image, FlatList, Pressable } from "react-native";
+import { useMemo, useState } from "react";
+import { Alert, Text, View, Image, FlatList, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useUser } from "@clerk/expo";
+import dayjs from "dayjs";
 import { colors } from "../../constants/theme";
-import { HOME_BALANCE } from "../../constants/data";
 import { icons } from "../../constants/icons";
 import { formatCurrency } from "../../constants/utils";
-import dayjs from "dayjs";
 import ListHeading from "../../components/ListHeading";
 import UpcomingSubscriptionCard from "../../components/UpcomingSubscriptionCard";
 import SubscriptionCard from "../../components/SubscriptionCard";
-import { useMemo, useState } from "react";
 import CreateSubscriptionModal from "../../components/CreateSubscriptionModal";
 import { useSubscriptions } from "../../context/SubscriptionsContext";
+import { useRouter } from "expo-router";
 
 export default function Home() {
   const [expandedSubscriptionId, setExpandedSubscriptionId] = useState(null);
-  const { user } = useUser();
-  const { subscriptions, addSubscription } = useSubscriptions();
   const [createModalVisible, setCreateModalVisible] = useState(false);
+  const [editingSubscription, setEditingSubscription] = useState(null);
+  const router = useRouter();
+
+  const { user } = useUser();
+
+  const {
+    subscriptions,
+    addSubscription,
+    updateSubscription,
+    deleteSubscription,
+    setSubscriptionStatus,
+  } = useSubscriptions();
+
 
   const upcomingSubscriptions = useMemo(() => {
     const today = dayjs().startOf("day");
@@ -47,9 +58,66 @@ export default function Home() {
       .slice(0, 5);
   }, [subscriptions]);
 
+  const monthlyTotalsByCurrency = useMemo(() => {
+    return subscriptions.reduce((totals, subscription) => {
+      if (subscription.status && subscription.status !== "active") {
+        return totals;
+      }
+
+      const itemCurrency = subscription.currency || "USD";
+      const price = Number(subscription.price) || 0;
+      const billing = subscription.billing?.toLowerCase();
+
+      const monthlyPrice = billing === "yearly" ? price / 12 : price;
+
+      return {
+        ...totals,
+        [itemCurrency]: (totals[itemCurrency] || 0) + monthlyPrice,
+      };
+    }, {});
+  }, [subscriptions]);
+
+  const monthlyTotalRows = Object.entries(monthlyTotalsByCurrency);
+
   const handleCreateSubscription = (subscription) => {
     addSubscription(subscription);
     setExpandedSubscriptionId(subscription.id);
+  };
+
+  const handleEditSubscription = (subscription) => {
+    setEditingSubscription(subscription);
+    setCreateModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setCreateModalVisible(false);
+    setEditingSubscription(null);
+  };
+
+  const handleDeleteSubscription = (subscription) => {
+    Alert.alert(
+      "Delete subscription",
+      `Delete ${subscription.name}? This cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            deleteSubscription(subscription.id);
+
+            if (expandedSubscriptionId === subscription.id) {
+              setExpandedSubscriptionId(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleToggleStatus = (subscription) => {
+    const isActive = !subscription.status || subscription.status === "active";
+    setSubscriptionStatus(subscription.id, isActive ? "paused" : "active");
   };
 
   const displayName =
@@ -134,6 +202,7 @@ export default function Home() {
                   {displayName}
                 </Text>
               </View>
+
               <Pressable onPress={() => setCreateModalVisible(true)}>
                 <Image
                   source={icons.add}
@@ -166,7 +235,7 @@ export default function Home() {
                   color: "rgba(255, 255, 255, 0.8)",
                 }}
               >
-                Balance
+                Monthly Balance
               </Text>
 
               <View
@@ -176,30 +245,55 @@ export default function Home() {
                   justifyContent: "space-between",
                 }}
               >
-                <Text
-                  style={{
-                    fontSize: 26,
-                    fontFamily: "sans-extrabold",
-                    color: "#ffffff",
-                  }}
-                >
-                  {formatCurrency(HOME_BALANCE.amount)}
-                </Text>
+                <View style={{ gap: 6 }}>
+                  {monthlyTotalRows.length > 0 ? (
+                    monthlyTotalRows.map(([itemCurrency, amount]) => (
+                      <Text
+                        key={itemCurrency}
+                        style={{
+                          fontSize: 24,
+                          fontFamily: "sans-extrabold",
+                          color: "#ffffff",
+                        }}
+                      >
+                        {formatCurrency(amount, itemCurrency)}
+                      </Text>
+                    ))
+                  ) : (
+                    <Text
+                      style={{
+                        fontSize: 24,
+                        fontFamily: "sans-extrabold",
+                        color: "#ffffff",
+                      }}
+                    >
+                      {formatCurrency(0, "USD")}
+                    </Text>
+                  )}
+                </View>
 
                 <Text
                   style={{
-                    fontSize: 20,
+                    fontSize: 15,
                     fontFamily: "sans-medium",
                     color: "#ffffff",
+                    opacity: 0.9,
                   }}
                 >
-                  {dayjs(HOME_BALANCE.nextRenewalDate).format("MM/DD")}
+                  monthly
                 </Text>
               </View>
             </View>
 
             <View style={{ marginBottom: 20 }}>
-              <ListHeading title="Upcoming" />
+              <ListHeading
+                title="Upcoming"
+                actionLabel="View All"
+                onActionPress={() => router.push({
+                  pathname: "/subscriptions",
+                  params: { filter: "upcoming" }
+                })}
+              />
 
               <FlatList
                 data={upcomingSubscriptions}
@@ -222,7 +316,11 @@ export default function Home() {
               />
             </View>
 
-            <ListHeading title="All Subscriptions" />
+            <ListHeading
+              title="All Subscriptions"
+              actionLabel="View All"
+              onActionPress={() => router.push("/subscriptions")}
+            />
           </>
         )}
         data={subscriptions}
@@ -236,6 +334,9 @@ export default function Home() {
                 currentId === item.id ? null : item.id
               )
             }
+            onEditPress={() => handleEditSubscription(item)}
+            onDeletePress={() => handleDeleteSubscription(item)}
+            onStatusPress={() => handleToggleStatus(item)}
           />
         )}
         extraData={expandedSubscriptionId}
@@ -255,10 +356,14 @@ export default function Home() {
         )}
         contentContainerStyle={{ paddingBottom: 120 }}
       />
+
       <CreateSubscriptionModal
         visible={createModalVisible}
-        onClose={() => setCreateModalVisible(false)}
+        onClose={handleCloseModal}
         onCreate={handleCreateSubscription}
+        onUpdate={updateSubscription}
+        mode={editingSubscription ? "edit" : "create"}
+        initialSubscription={editingSubscription}
       />
     </SafeAreaView>
   );
