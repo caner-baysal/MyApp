@@ -5,6 +5,7 @@ import { useFonts } from "expo-font";
 import { useEffect } from "react";
 import * as SplashScreen from "expo-splash-screen";
 import { SubscriptionsProvider } from "../context/SubscriptionsContext";
+import { setAuthTokenGetter } from "../services/api";
 
 
 SplashScreen.preventAutoHideAsync();
@@ -16,7 +17,7 @@ if (!publishableKey) {
 }
 
 function RootNavigator() {
-  const { isLoaded: authLoaded } = useAuth();
+  const { isLoaded: authLoaded, getToken } = useAuth();
 
   const [fontsLoaded] = useFonts({
     "sans-regular": require("../assets/fonts/PlusJakartaSans-Regular.ttf"),
@@ -26,6 +27,10 @@ function RootNavigator() {
     "sans-extrabold": require("../assets/fonts/PlusJakartaSans-ExtraBold.ttf"),
     "sans-light": require("../assets/fonts/PlusJakartaSans-Light.ttf"),
   });
+
+  useEffect(() => {
+    setAuthTokenGetter(getToken);
+  }, [getToken]);
 
   useEffect(() => {
     if (fontsLoaded && authLoaded) {

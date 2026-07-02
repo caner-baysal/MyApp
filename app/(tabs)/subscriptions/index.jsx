@@ -27,8 +27,10 @@ export default function Subscriptions() {
   const {
     subscriptions,
     updateSubscription,
-    deleteSubscription,
-    setSubscriptionStatus,
+    removeSubscription,
+    updateSubscriptionStatus,
+    isLoadingSubscriptions,
+    subscriptionsError,
   } = useSubscriptions();
 
   const filteredSubscriptions = useMemo(() => {
@@ -91,6 +93,18 @@ export default function Subscriptions() {
     setEditingSubscription(null);
   };
 
+  const handleUpdateSubscription = async (id, updates) => {
+    try {
+      await updateSubscription(id, updates);
+      handleCloseEditModal();
+    } catch (error) {
+      Alert.alert(
+        "Update error",
+        error.message || "Could not update subscription."
+      );
+    }
+  };
+
   const handleDeleteSubscription = (subscription) => {
     Alert.alert(
       "Delete subscription",
@@ -101,7 +115,7 @@ export default function Subscriptions() {
           text: "Delete",
           style: "destructive",
           onPress: () => {
-            deleteSubscription(subscription.id);
+            removeSubscription(subscription.id);
 
             if (expandedSubscriptionId === subscription.id) {
               setExpandedSubscriptionId(null);
@@ -112,9 +126,20 @@ export default function Subscriptions() {
     );
   };
 
-  const handleToggleStatus = (subscription) => {
+  const handleToggleStatus = async (subscription) => {
     const isActive = !subscription.status || subscription.status === "active";
-    setSubscriptionStatus(subscription.id, isActive ? "paused" : "active");
+
+    try {
+      await updateSubscriptionStatus(
+        subscription.id,
+        isActive ? "paused" : "active"
+      );
+    } catch (error) {
+      Alert.alert(
+        "Status error",
+        error.message || "Could not update subscription status."
+      );
+    }
   };
 
   return (
@@ -276,7 +301,7 @@ export default function Subscriptions() {
         ListEmptyComponent={() => (
           <View
             style={{
-              paddingVertical: 36,
+              paddingVertical: 24,
               alignItems: "center",
             }}
           >
@@ -286,22 +311,29 @@ export default function Subscriptions() {
                 fontFamily: "sans-bold",
                 color: colors.primary,
                 marginBottom: 8,
+                textAlign: "center",
               }}
             >
-              No subscriptions found
+              {isLoadingSubscriptions
+                ? "Loading subscriptions..."
+                : subscriptionsError
+                  ? subscriptionsError
+                  : "No subscriptions found."}
             </Text>
 
-            <Text
-              style={{
-                fontSize: 14,
-                fontFamily: "sans-medium",
-                color: colors.mutedForeground,
-                textAlign: "center",
-                lineHeight: 20,
-              }}
-            >
-              Try searching by name, category, status, or payment method.
-            </Text>
+            {!isLoadingSubscriptions && !subscriptionsError && (
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontFamily: "sans-medium",
+                  color: colors.mutedForeground,
+                  textAlign: "center",
+                  lineHeight: 20,
+                }}
+              >
+                Try searching by name, category, status, or payment method.
+              </Text>
+            )}
           </View>
         )}
       />
@@ -309,7 +341,7 @@ export default function Subscriptions() {
       <CreateSubscriptionModal
         visible={editModalVisible}
         onClose={handleCloseEditModal}
-        onUpdate={updateSubscription}
+        onUpdate={handleUpdateSubscription}
         mode="edit"
         initialSubscription={editingSubscription}
       />

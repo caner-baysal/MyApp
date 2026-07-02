@@ -23,10 +23,12 @@ export default function Home() {
 
   const {
     subscriptions,
+    isLoadingSubscriptions,
+    subscriptionsError,
     addSubscription,
     updateSubscription,
-    deleteSubscription,
-    setSubscriptionStatus,
+    removeSubscription,
+    updateSubscriptionStatus,
   } = useSubscriptions();
 
 
@@ -79,9 +81,16 @@ export default function Home() {
 
   const monthlyTotalRows = Object.entries(monthlyTotalsByCurrency);
 
-  const handleCreateSubscription = (subscription) => {
-    addSubscription(subscription);
-    setExpandedSubscriptionId(subscription.id);
+  const handleCreateSubscription = async (subscription) => {
+    try {
+      const createdSubscription = await addSubscription(subscription);
+      setExpandedSubscriptionId(createdSubscription.id);
+    } catch (error) {
+      Alert.alert(
+        "Subscription error",
+        error.message || "Could not create subscription."
+      );
+    }
   };
 
   const handleEditSubscription = (subscription) => {
@@ -103,11 +112,18 @@ export default function Home() {
         {
           text: "Delete",
           style: "destructive",
-          onPress: () => {
-            deleteSubscription(subscription.id);
+          onPress: async () => {
+            try {
+              await removeSubscription(subscription.id);
 
-            if (expandedSubscriptionId === subscription.id) {
-              setExpandedSubscriptionId(null);
+              if (expandedSubscriptionId === subscription.id) {
+                setExpandedSubscriptionId(null);
+              }
+            } catch (error) {
+              Alert.alert(
+                "Delete error",
+                error.message || "Could not delete subscription."
+              );
             }
           },
         },
@@ -115,9 +131,32 @@ export default function Home() {
     );
   };
 
-  const handleToggleStatus = (subscription) => {
+  const handleToggleStatus = async (subscription) => {
     const isActive = !subscription.status || subscription.status === "active";
-    setSubscriptionStatus(subscription.id, isActive ? "paused" : "active");
+
+    try {
+      await updateSubscriptionStatus(
+        subscription.id,
+        isActive ? "paused" : "active"
+      );
+    } catch (error) {
+      Alert.alert(
+        "Status error",
+        error.message || "Could not update subscription status."
+      );
+    }
+  };
+
+  const handleUpdateSubscription = async (id, updates) => {
+    try {
+      await updateSubscription(id, updates);
+      handleCloseModal();
+    } catch (error) {
+      Alert.alert(
+        "Update error",
+        error.message || "Could not update subscription."
+      );
+    }
   };
 
   const displayName =
@@ -224,7 +263,7 @@ export default function Home() {
                 gap: 20,
                 borderBottomLeftRadius: 32,
                 borderTopRightRadius: 32,
-                backgroundColor: colors.accent,
+                backgroundColor: "#7F9F8A",
                 padding: 24,
               }}
             >
@@ -310,7 +349,11 @@ export default function Home() {
                       color: "rgba(0, 0, 0, 0.6)",
                     }}
                   >
-                    No renewals in the next 30 days.
+                    {isLoadingSubscriptions
+                      ? "Loading subscriptions..."
+                      : subscriptionsError
+                        ? subscriptionsError
+                        : "No subscriptions yet."}
                   </Text>
                 )}
               />
@@ -351,7 +394,11 @@ export default function Home() {
               color: "rgba(0, 0, 0, 0.6)",
             }}
           >
-            No subscriptions yet.
+            {isLoadingSubscriptions
+              ? "Loading subscriptions..."
+              : subscriptionsError
+                ? subscriptionsError
+                : "No subscriptions yet."}
           </Text>
         )}
         contentContainerStyle={{ paddingBottom: 120 }}
@@ -361,7 +408,7 @@ export default function Home() {
         visible={createModalVisible}
         onClose={handleCloseModal}
         onCreate={handleCreateSubscription}
-        onUpdate={updateSubscription}
+        onUpdate={handleUpdateSubscription}
         mode={editingSubscription ? "edit" : "create"}
         initialSubscription={editingSubscription}
       />

@@ -1,59 +1,92 @@
-import { createContext, useContext, useMemo, useState } from "react";
-import { HOME_SUBSCRIPTIONS } from "../constants/data";
+import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createSubscription as createSubscriptionRequest,
+  deleteSubscription as deleteSubscriptionRequest,
+  getSubscriptions,
+  updateSubscription as updateSubscriptionRequest,
+  updateSubscriptionStatus as updateSubscriptionStatusRequest,
+} from "../services/subscriptionsApi";
 
 const SubscriptionsContext = createContext(null);
 
 export function SubscriptionsProvider({ children }) {
-  const [subscriptions, setSubscriptions] = useState(HOME_SUBSCRIPTIONS);
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [isLoadingSubscriptions, setIsLoadingSubscriptions] = useState(true);
+  const [subscriptionsError, setSubscriptionsError] = useState("");
 
-  const addSubscription = (subscription) => {
+  const loadSubscriptions = async () => {
+    setSubscriptionsError("");
+
+    try {
+      const data = await getSubscriptions();
+      setSubscriptions(data || []);
+    } catch (error) {
+      setSubscriptionsError(error.message || "Could not load subscriptions.");
+    } finally {
+      setIsLoadingSubscriptions(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSubscriptions();
+  }, []);
+
+  const addSubscription = async (subscription) => {
+    const createdSubscription = await createSubscriptionRequest(subscription);
+
     setSubscriptions((currentSubscriptions) => [
-      subscription,
+      createdSubscription,
       ...currentSubscriptions,
     ]);
+
+    return createdSubscription;
   };
 
-  const updateSubscription = (subscriptionId, updates) => {
+  const updateSubscription = async (id, updates) => {
+    const updatedSubscription = await updateSubscriptionRequest(id, updates);
+
     setSubscriptions((currentSubscriptions) =>
       currentSubscriptions.map((subscription) =>
-        subscription.id === subscriptionId
-          ? { ...subscription, ...updates }
-          : subscription
+        subscription.id === id ? updatedSubscription : subscription
       )
     );
+
+    return updatedSubscription;
   };
 
-  const deleteSubscription = (subscriptionId) => {
+  const removeSubscription = async (id) => {
+    await deleteSubscriptionRequest(id);
+
     setSubscriptions((currentSubscriptions) =>
-      currentSubscriptions.filter(
-        (subscription) => subscription.id !== subscriptionId
-      )
+      currentSubscriptions.filter((subscription) => subscription.id !== id)
     );
   };
 
-  const setSubscriptionStatus = (subscriptionId, status) => {
-    updateSubscription(subscriptionId, { status });
-  };
+  const updateSubscriptionStatus = async (id, status) => {
+    const updatedSubscription = await updateSubscriptionStatusRequest(id, status);
 
-  const activeSubscriptions = useMemo(
-    () =>
-      subscriptions.filter(
-        (subscription) => !subscription.status || subscription.status === "active"
-      ),
-    [subscriptions]
-  );
+    setSubscriptions((currentSubscriptions) =>
+      currentSubscriptions.map((subscription) =>
+        subscription.id === id ? updatedSubscription : subscription
+      )
+    );
 
-  const value = {
-    subscriptions,
-    activeSubscriptions,
-    addSubscription,
-    updateSubscription,
-    deleteSubscription,
-    setSubscriptionStatus,
+    return updatedSubscription;
   };
 
   return (
-    <SubscriptionsContext.Provider value={value}>
+    <SubscriptionsContext.Provider
+      value={{
+        subscriptions,
+        isLoadingSubscriptions,
+        subscriptionsError,
+        loadSubscriptions,
+        addSubscription,
+        updateSubscription,
+        removeSubscription,
+        updateSubscriptionStatus,
+      }}
+    >
       {children}
     </SubscriptionsContext.Provider>
   );

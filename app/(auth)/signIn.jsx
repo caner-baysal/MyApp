@@ -45,14 +45,13 @@ export default function SignIn() {
         await signIn.finalize({
           navigate: ({ session }) => {
             if (session?.currentTask) {
-              console.log("Session task:", session.currentTask);
+             
             }
           },
         });
 
         router.replace("/");
       } else {
-        console.log("Sign-in not complete:", signIn);
         setErrorMessage("Please complete the remaining sign in steps.");
       }
     } catch (error) {

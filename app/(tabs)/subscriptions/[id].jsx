@@ -1,15 +1,5 @@
-import { View, Text } from 'react-native'
-import React from 'react'
-import { Link, useLocalSearchParams } from 'expo-router'
+import { Redirect } from "expo-router";
 
-const SubscriptionDetails = () => {
-    const {id} = useLocalSearchParams();
-  return (
-    <View>
-      <Text>Subscription Details: {id}</Text>
-      <Link href="/">Go Back</Link>
-    </View>
-  )
+export default function SubscriptionDetails() {
+  return <Redirect href="/subscriptions" />;
 }
-
-export default SubscriptionDetails

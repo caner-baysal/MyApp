@@ -25,9 +25,10 @@ export default function SubscriptionCard({
     onEditPress,
     onDeletePress,
     onStatusPress,
+    iconUrl,
 }) {
     const [iconFailed, setIconFailed] = useState(false);
-    const iconSource = iconFailed ? icons.wallet : icon;
+    const iconSource = iconFailed ? icons.wallet : iconUrl ? { uri: iconUrl } : icon;
     const isActive = !status || status === "active";
 
     const details = [

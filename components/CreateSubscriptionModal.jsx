@@ -11,7 +11,6 @@ import {
     View,
 } from "react-native";
 import dayjs from "dayjs";
-import { icons } from "../constants/icons";
 import { colors } from "../constants/theme";
 
 const frequencies = ["Monthly", "Yearly"];
@@ -65,18 +64,16 @@ const normalizeBrandKey = (value) =>
         .toLowerCase()
         .replace(/[^a-z0-9]/g, "");
 
-const getSubscriptionIcon = (subscriptionName) => {
+const getSubscriptionIconUrl = (subscriptionName) => {
     const brandKey = normalizeBrandKey(subscriptionName);
 
     if (!brandKey) {
-        return icons.wallet;
+        return "";
     }
 
     const domain = brandDomainOverrides[brandKey] || `${brandKey}.com`;
 
-    return {
-        uri: `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
-    };
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
 };
 
 export default function CreateSubscriptionModal({
@@ -145,13 +142,15 @@ export default function CreateSubscriptionModal({
             onUpdate(initialSubscription.id, {
                 name: trimmedName,
                 price: numericPrice,
+                currency,
                 billing: frequency,
-                plan: `${frequency} Plan`,
                 category,
+                paymentMethod: initialSubscription.paymentMethod || "Not set",
+                status: initialSubscription.status || "active",
+                startDate: initialSubscription.startDate || now.toISOString(),
                 renewalDate: renewalDate.toISOString(),
                 color: categoryColors[category] || categoryColors.Other,
-                icon: getSubscriptionIcon(trimmedName),
-                currency,
+                iconUrl: getSubscriptionIconUrl(trimmedName),
             });
 
             handleClose();
@@ -159,19 +158,17 @@ export default function CreateSubscriptionModal({
         }
 
         const newSubscription = {
-            id: `${normalizeBrandKey(trimmedName)}-${Date.now()}`,
-            icon: getSubscriptionIcon(trimmedName),
             name: trimmedName,
-            plan: `${frequency} Plan`,
+            price: numericPrice,
+            currency,
+            billing: frequency,
             category,
             paymentMethod: "Not set",
             status: "active",
             startDate: now.toISOString(),
-            price: numericPrice,
-            currency,
-            billing: frequency,
             renewalDate: renewalDate.toISOString(),
             color: categoryColors[category] || categoryColors.Other,
+            iconUrl: getSubscriptionIconUrl(trimmedName),
         };
 
         onCreate(newSubscription);

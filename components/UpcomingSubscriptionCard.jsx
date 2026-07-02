@@ -1,13 +1,29 @@
+import { useState } from "react";
 import { View, Text, Image } from "react-native";
-import React from "react";
 import { formatCurrency } from "../constants/utils";
+import { icons } from "../constants/icons";
 
-const UpcomingSubscriptionCard = ({ name, price, daysLeft, icon, currency }) => {
+const UpcomingSubscriptionCard = ({
+  name,
+  price,
+  daysLeft,
+  icon,
+  iconUrl,
+  currency,
+}) => {
+  const [iconFailed, setIconFailed] = useState(false);
+
+  const iconSource = iconFailed
+    ? icons.wallet
+    : iconUrl
+      ? { uri: iconUrl }
+      : icon;
+
   return (
     <View
       style={{
         marginRight: 16,
-        width: 158,
+        width: 176,
         borderRadius: 16,
         borderWidth: 1,
         borderColor: "rgba(0, 0, 0, 0.1)",
@@ -15,17 +31,36 @@ const UpcomingSubscriptionCard = ({ name, price, daysLeft, icon, currency }) => 
         padding: 16,
       }}
     >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-        <Image source={icon} style={{ width: 56, height: 56 }} />
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        <Image
+          source={iconSource}
+          onError={() => setIconFailed(true)}
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: 10,
+            backgroundColor: "rgba(0, 0, 0, 0.05)",
+          }}
+        />
 
-        <View>
-          <Text style={{ fontSize: 18, fontFamily: "sans-bold", color: "#081126" }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.78}
+            style={{
+              fontSize: 17,
+              fontFamily: "sans-bold",
+              color: "#081126",
+            }}
+          >
             {formatCurrency(price, currency || "USD")}
           </Text>
 
           <Text
             style={{
-              fontSize: 14,
+              marginTop: 2,
+              fontSize: 13,
               fontFamily: "sans-semibold",
               color: "rgba(0, 0, 0, 0.6)",
             }}
@@ -38,8 +73,8 @@ const UpcomingSubscriptionCard = ({ name, price, daysLeft, icon, currency }) => 
 
       <Text
         style={{
-          marginTop: 8,
-          fontSize: 18,
+          marginTop: 10,
+          fontSize: 17,
           fontFamily: "sans-bold",
           color: "#081126",
         }}
