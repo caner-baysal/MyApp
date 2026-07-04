@@ -2,6 +2,7 @@ import { useState } from "react";
 import { View, Text, Image } from "react-native";
 import { formatCurrency } from "../constants/utils";
 import { icons } from "../constants/icons";
+import { colors } from "../constants/theme";
 
 const UpcomingSubscriptionCard = ({
   name,
@@ -26,8 +27,8 @@ const UpcomingSubscriptionCard = ({
         width: 176,
         borderRadius: 16,
         borderWidth: 1,
-        borderColor: "rgba(0, 0, 0, 0.1)",
-        backgroundColor: "#fff9e3",
+        borderColor: colors.border,
+        backgroundColor: colors.upcomingCard,
         padding: 16,
       }}
     >
@@ -36,8 +37,8 @@ const UpcomingSubscriptionCard = ({
           source={iconSource}
           onError={() => setIconFailed(true)}
           style={{
-            width: 48,
-            height: 48,
+            width: 32,
+            height: 32,
             borderRadius: 10,
             backgroundColor: "rgba(0, 0, 0, 0.05)",
           }}

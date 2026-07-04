@@ -166,6 +166,8 @@ export default function Insights() {
 
                   <Text
                     numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.72}
                     style={{
                       marginTop: 12,
                       fontSize: 24,

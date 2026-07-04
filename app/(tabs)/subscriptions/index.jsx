@@ -52,7 +52,7 @@ export default function Subscriptions() {
 
           const daysLeft = renewalDate.startOf("day").diff(today, "day");
 
-          return daysLeft >= 0 && daysLeft <= 30;
+          return daysLeft >= 0 && daysLeft <= 10;
         })
         : subscriptions;
 

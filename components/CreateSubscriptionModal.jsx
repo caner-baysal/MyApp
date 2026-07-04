@@ -13,6 +13,7 @@ import {
 import dayjs from "dayjs";
 import { colors } from "../constants/theme";
 
+
 const frequencies = ["Monthly", "Yearly"];
 
 const currencies = ["USD", "EUR", "TRY", "GBP", "CAD", "AUD"];
@@ -76,6 +77,35 @@ const getSubscriptionIconUrl = (subscriptionName) => {
     return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
 };
 
+const formatDateInput = (value) => {
+    const digits = value.replace(/\D/g, "").slice(0, 8);
+
+    if (digits.length <= 4) {
+        return digits;
+    }
+
+    if (digits.length <= 6) {
+        return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+    }
+
+    return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6)}`;
+};
+
+const getDefaultRenewalDate = (dateValue, frequency) => {
+    const parsedDate = dayjs(dateValue);
+
+    if (!parsedDate.isValid()) {
+        return "";
+    }
+
+    const nextDate =
+        frequency === "Monthly"
+            ? parsedDate.add(1, "month")
+            : parsedDate.add(1, "year");
+
+    return nextDate.format("YYYY-MM-DD");
+};
+
 export default function CreateSubscriptionModal({
     visible,
     onClose,
@@ -91,13 +121,22 @@ export default function CreateSubscriptionModal({
     const [frequency, setFrequency] = useState("Monthly");
     const [category, setCategory] = useState("Entertainment");
     const [currency, setCurrency] = useState("USD");
+    const [startDate, setStartDate] = useState("");
+    const [renewalDate, setRenewalDate] = useState("");
+    const [paymentMethod, setPaymentMethod] = useState("");
 
     const resetForm = () => {
+        const today = dayjs();
+        const defaultRenewalDate = today.add(1, "month");
+
         setName("");
         setPrice("");
         setFrequency("Monthly");
         setCategory("Entertainment");
         setCurrency("USD");
+        setStartDate(today.format("YYYY-MM-DD"));
+        setRenewalDate(defaultRenewalDate.format("YYYY-MM-DD"));
+        setPaymentMethod("");
     };
 
     useEffect(() => {
@@ -109,6 +148,18 @@ export default function CreateSubscriptionModal({
             setFrequency(initialSubscription.billing || "Monthly");
             setCategory(initialSubscription.category || "Entertainment");
             setCurrency(initialSubscription.currency || "USD");
+            setStartDate(
+                initialSubscription.startDate
+                    ? dayjs(initialSubscription.startDate).format("YYYY-MM-DD")
+                    : dayjs().format("YYYY-MM-DD")
+            );
+            setPaymentMethod(initialSubscription.paymentMethod || "");
+
+            setRenewalDate(
+                initialSubscription.renewalDate
+                    ? dayjs(initialSubscription.renewalDate).format("YYYY-MM-DD")
+                    : dayjs().add(1, "month").format("YYYY-MM-DD")
+            );
             return;
         }
 
@@ -118,6 +169,31 @@ export default function CreateSubscriptionModal({
     const handleClose = () => {
         resetForm();
         onClose();
+    };
+
+    const handleFrequencyChange = (nextFrequency) => {
+        setFrequency(nextFrequency);
+
+        const defaultRenewalDate = getDefaultRenewalDate(startDate, nextFrequency);
+
+        if (defaultRenewalDate) {
+            setRenewalDate(defaultRenewalDate);
+        }
+    };
+
+    const handleStartDateChange = (value) => {
+        const formattedDate = formatDateInput(value);
+        setStartDate(formattedDate);
+
+        const defaultRenewalDate = getDefaultRenewalDate(formattedDate, frequency);
+
+        if (defaultRenewalDate) {
+            setRenewalDate(defaultRenewalDate);
+        }
+    };
+
+    const handleRenewalDateChange = (value) => {
+        setRenewalDate(formatDateInput(value));
     };
 
     const handleSubmit = () => {
@@ -134,9 +210,18 @@ export default function CreateSubscriptionModal({
             return;
         }
 
-        const now = dayjs();
-        const renewalDate =
-            frequency === "Monthly" ? now.add(1, "month") : now.add(1, "year");
+        const parsedStartDate = dayjs(startDate);
+        const parsedRenewalDate = dayjs(renewalDate);
+
+        if (!parsedStartDate.isValid()) {
+            Alert.alert("Invalid start date", "Please enter start date as YYYY-MM-DD.");
+            return;
+        }
+
+        if (!parsedRenewalDate.isValid()) {
+            Alert.alert("Invalid renewal date", "Please enter renewal date as YYYY-MM-DD.");
+            return;
+        }
 
         if (isEditMode && initialSubscription) {
             onUpdate(initialSubscription.id, {
@@ -145,12 +230,12 @@ export default function CreateSubscriptionModal({
                 currency,
                 billing: frequency,
                 category,
-                paymentMethod: initialSubscription.paymentMethod || "Not set",
                 status: initialSubscription.status || "active",
-                startDate: initialSubscription.startDate || now.toISOString(),
-                renewalDate: renewalDate.toISOString(),
+                startDate: parsedStartDate.toISOString(),
+                renewalDate: parsedRenewalDate.toISOString(),
                 color: categoryColors[category] || categoryColors.Other,
                 iconUrl: getSubscriptionIconUrl(trimmedName),
+                paymentMethod: paymentMethod.trim(),
             });
 
             handleClose();
@@ -163,10 +248,10 @@ export default function CreateSubscriptionModal({
             currency,
             billing: frequency,
             category,
-            paymentMethod: "Not set",
+            paymentMethod: paymentMethod.trim(),
             status: "active",
-            startDate: now.toISOString(),
-            renewalDate: renewalDate.toISOString(),
+            startDate: parsedStartDate.toISOString(),
+            renewalDate: parsedRenewalDate.toISOString(),
             color: categoryColors[category] || categoryColors.Other,
             iconUrl: getSubscriptionIconUrl(trimmedName),
         };
@@ -319,6 +404,77 @@ export default function CreateSubscriptionModal({
                                 })}
                             </View>
 
+                            <Text style={{ fontFamily: "sans-bold", color: colors.primary, marginBottom: 8 }}>
+                                Payment label
+                            </Text>
+
+                            <TextInput
+                                value={paymentMethod}
+                                onChangeText={setPaymentMethod}
+                                placeholder="Optional: App Store, Personal card, Visa ending in 1234"
+                                placeholderTextColor="rgba(8, 17, 38, 0.45)"
+                                style={{
+                                    borderWidth: 1,
+                                    borderColor: colors.border,
+                                    borderRadius: 16,
+                                    paddingHorizontal: 16,
+                                    paddingVertical: 14,
+                                    fontSize: 16,
+                                    fontFamily: "sans-semibold",
+                                    color: colors.primary,
+                                    backgroundColor: colors.card,
+                                    marginBottom: 18,
+                                }}
+                            />
+
+                            <Text style={{ fontFamily: "sans-bold", color: colors.primary, marginBottom: 8 }}>
+                                Start Date
+                            </Text>
+                            <TextInput
+                                value={startDate}
+                                onChangeText={handleStartDateChange}
+                                placeholder="YYYY-MM-DD"
+                                placeholderTextColor="rgba(8, 17, 38, 0.45)"
+                                style={{
+                                    borderWidth: 1,
+                                    borderColor: colors.border,
+                                    borderRadius: 16,
+                                    paddingHorizontal: 16,
+                                    paddingVertical: 14,
+                                    fontSize: 16,
+                                    fontFamily: "sans-semibold",
+                                    color: colors.primary,
+                                    backgroundColor: colors.card,
+                                    marginBottom: 18,
+                                }}
+                                keyboardType="number-pad"
+                                maxLength={10}
+                            />
+
+                            <Text style={{ fontFamily: "sans-bold", color: colors.primary, marginBottom: 8 }}>
+                                Renewal Date
+                            </Text>
+                            <TextInput
+                                value={renewalDate}
+                                onChangeText={handleRenewalDateChange}
+                                placeholder="YYYY-MM-DD"
+                                placeholderTextColor="rgba(8, 17, 38, 0.45)"
+                                style={{
+                                    borderWidth: 1,
+                                    borderColor: colors.border,
+                                    borderRadius: 16,
+                                    paddingHorizontal: 16,
+                                    paddingVertical: 14,
+                                    fontSize: 16,
+                                    fontFamily: "sans-semibold",
+                                    color: colors.primary,
+                                    backgroundColor: colors.card,
+                                    marginBottom: 18,
+                                }}
+                                keyboardType="number-pad"
+                                maxLength={10}
+                            />
+
                             <Text style={{ fontFamily: "sans-bold", color: colors.primary, marginBottom: 10 }}>
                                 Frequency
                             </Text>
@@ -329,7 +485,7 @@ export default function CreateSubscriptionModal({
                                     return (
                                         <Pressable
                                             key={item}
-                                            onPress={() => setFrequency(item)}
+                                            onPress={() => handleFrequencyChange(item)}
                                             style={{
                                                 flex: 1,
                                                 paddingVertical: 12,

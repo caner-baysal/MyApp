@@ -6,6 +6,7 @@ import {
     formatSubscriptionDateTime,
     formatStatusLabel,
 } from "../constants/utils";
+import { colors } from "../constants/theme";
 
 export default function SubscriptionCard({
     name,
@@ -32,12 +33,12 @@ export default function SubscriptionCard({
     const isActive = !status || status === "active";
 
     const details = [
-        ["Payment:", paymentMethod?.trim() || "N/A"],
+        paymentMethod?.trim() ? ["Payment:", paymentMethod.trim()] : null,
         ["Category:", category?.trim() || plan?.trim() || "N/A"],
         ["Started:", startDate ? formatSubscriptionDateTime(startDate) : "N/A"],
         ["Renewal Date:", renewalDate ? formatSubscriptionDateTime(renewalDate) : "N/A"],
         ["Status:", status ? formatStatusLabel(status) : "N/A"],
-    ];
+    ].filter(Boolean);
 
     return (
         <Pressable
@@ -46,11 +47,12 @@ export default function SubscriptionCard({
                 {
                     borderRadius: 16,
                     borderWidth: 1,
-                    borderColor: "rgba(0, 0, 0, 0.1)",
+                    borderColor: colors.border,
                     padding: 16,
                 },
-                { backgroundColor: expanded ? "#8fd1bd" : "#fff8e7" },
-                !expanded && color ? { backgroundColor: color } : undefined,
+                {
+                    backgroundColor: expanded ? colors.subscription : colors.subscriptionCard,
+                },
             ]}
         >
             <View style={{ flexDirection: "row", alignItems: "center", paddingVertical: 8 }}>
@@ -58,7 +60,7 @@ export default function SubscriptionCard({
                     <Image
                         source={iconSource}
                         onError={() => setIconFailed(true)}
-                        style={{ width: 64, height: 64, borderRadius: 8 }}
+                        style={{ width: 32, height: 32, borderRadius: 8 }}
                     />
 
                     <View style={{ minWidth: 0, flex: 1 }}>

@@ -169,6 +169,29 @@ export default function Settings() {
           />
         </SettingsSection>
 
+        <SettingsSection title="About Subshelf">
+          <View
+            style={{
+              padding: 16,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.border,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 14,
+                fontFamily: "sans-medium",
+                color: colors.mutedForeground,
+                lineHeight: 20,
+              }}
+            >
+              Subshelf is not affiliated with, endorsed by, or sponsored by any
+              subscription brands shown in the app. Brand names and icons may be used
+              only to help users identify their own subscriptions.
+            </Text>
+          </View>
+        </SettingsSection>
+
         <SettingsSection title="App">
           <SettingsInfoRow title="Version" value="1.0.0" />
         </SettingsSection>

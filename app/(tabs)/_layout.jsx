@@ -4,6 +4,7 @@ import { tabs } from "../../constants/data";
 import { View, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, components } from "../../constants/theme";
+import { StatusBar } from "expo-status-bar";
 
 const tabBar = components.tabBar;
 
@@ -37,7 +38,7 @@ const TabLayout = () => {
               justifyContent: "center",
             },
             focused && {
-              backgroundColor: "#2563eb",
+              backgroundColor: colors.accent,
             },
           ]}
         >
@@ -55,6 +56,8 @@ const TabLayout = () => {
   };
 
   return (
+    <>
+    <StatusBar style="dark" />
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -65,7 +68,7 @@ const TabLayout = () => {
           height: tabBar.height,
           marginHorizontal: tabBar.horizontalInset,
           borderRadius: tabBar.radius,
-          backgroundColor: colors.primary,
+          backgroundColor: colors.tabBar,
           borderTopWidth: 0,
           elevation: 0,
         },
@@ -92,6 +95,7 @@ const TabLayout = () => {
         />
       ))}
     </Tabs>
+    </>
   );
 };
 

@@ -62,7 +62,6 @@ export default function SignUp() {
       await signUp.verifications.sendEmailCode();
       setPendingVerification(true);
     } catch (error) {
-      console.log("Raw sign up error:", error);
       console.log("Sign up error message:", error?.message);
       console.log("Sign up error errors:", error?.errors);
 

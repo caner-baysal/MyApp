@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Alert, Text, View, Image, FlatList, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useUser } from "@clerk/expo";
+//import { useUser } from "@clerk/expo";
 import dayjs from "dayjs";
 import { colors } from "../../constants/theme";
 import { icons } from "../../constants/icons";
@@ -12,6 +12,7 @@ import SubscriptionCard from "../../components/SubscriptionCard";
 import CreateSubscriptionModal from "../../components/CreateSubscriptionModal";
 import { useSubscriptions } from "../../context/SubscriptionsContext";
 import { useRouter } from "expo-router";
+import images from "../../constants/images";
 
 export default function Home() {
   const [expandedSubscriptionId, setExpandedSubscriptionId] = useState(null);
@@ -19,7 +20,7 @@ export default function Home() {
   const [editingSubscription, setEditingSubscription] = useState(null);
   const router = useRouter();
 
-  const { user } = useUser();
+  //const { user } = useUser();
 
   const {
     subscriptions,
@@ -54,7 +55,7 @@ export default function Home() {
         if (!subscription) return false;
         if (subscription.status && subscription.status !== "active") return false;
 
-        return subscription.daysLeft >= 0 && subscription.daysLeft <= 30;
+        return subscription.daysLeft >= 0 && subscription.daysLeft <= 10;
       })
       .sort((a, b) => a.daysLeft - b.daysLeft)
       .slice(0, 5);
@@ -159,6 +160,7 @@ export default function Home() {
     }
   };
 
+  /*
   const displayName =
     user?.fullName ||
     user?.firstName ||
@@ -167,12 +169,13 @@ export default function Home() {
 
   const avatarUrl = user?.imageUrl;
   const avatarInitial = displayName.charAt(0).toUpperCase();
+  */
 
   return (
     <SafeAreaView
       style={{
         flex: 1,
-        backgroundColor: "#f8fafc",
+        backgroundColor: colors.background,
         padding: 5,
       }}
     >
@@ -181,7 +184,7 @@ export default function Home() {
           <>
             <View
               style={{
-                marginBottom: 10,
+                marginBottom: 14,
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "space-between",
@@ -195,61 +198,63 @@ export default function Home() {
                   minWidth: 0,
                 }}
               >
-                {avatarUrl ? (
-                  <Image
-                    source={{ uri: avatarUrl }}
+                <Image
+                  source={require("../../assets/images/subshelf-logo.png")}
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 16,
+                    marginRight: 14,
+                    backgroundColor: "#0D1F1A",
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                  }}
+                  resizeMode="cover"
+                />
+
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text
                     style={{
-                      width: 64,
-                      height: 64,
-                      borderRadius: 9999,
-                    }}
-                  />
-                ) : (
-                  <View
-                    style={{
-                      width: 64,
-                      height: 64,
-                      borderRadius: 9999,
-                      backgroundColor: colors.accent,
-                      alignItems: "center",
-                      justifyContent: "center",
+                      fontSize: 24,
+                      fontFamily: "sans-extrabold",
+                      color: colors.primary,
                     }}
                   >
-                    <Text
-                      style={{
-                        color: "#ffffff",
-                        fontSize: 24,
-                        fontFamily: "sans-bold",
-                      }}
-                    >
-                      {avatarInitial}
-                    </Text>
-                  </View>
-                )}
+                    Subshelf
+                  </Text>
 
-                <Text
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                  style={{
-                    marginLeft: 16,
-                    flex: 1,
-                    fontSize: 20,
-                    fontFamily: "sans-bold",
-                    color: colors.primary,
-                  }}
-                >
-                  {displayName}
-                </Text>
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      marginTop: 3,
+                      fontSize: 13,
+                      fontFamily: "sans-medium",
+                      color: colors.mutedForeground,
+                    }}
+                  >
+                    Smart subscription control
+                  </Text>
+                </View>
               </View>
 
-              <Pressable onPress={() => setCreateModalVisible(true)}>
+              <Pressable
+                onPress={() => setCreateModalVisible(true)}
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 9999,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.card,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
                 <Image
                   source={icons.add}
                   style={{
-                    width: 36,
-                    height: 36,
-                    borderWidth: 1,
-                    borderRadius: 9999,
+                    width: 24,
+                    height: 24,
                   }}
                 />
               </Pressable>
@@ -263,7 +268,7 @@ export default function Home() {
                 gap: 20,
                 borderBottomLeftRadius: 32,
                 borderTopRightRadius: 32,
-                backgroundColor: "#7F9F8A",
+                backgroundColor: colors.balance,
                 padding: 24,
               }}
             >
