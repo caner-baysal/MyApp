@@ -7,21 +7,15 @@
     "orientation": "portrait",
     "icon": "./assets/images/subshelf-logo.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/images/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "package": "com.subshelf.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/subshelf-logo.png",
         "backgroundColor": "#0D1F1A"
-      },
-      "edgeToEdgeEnabled": true
+      }
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
@@ -56,6 +50,12 @@
       ],
       "@clerk/expo",
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a863fb39-3446-4066-a6c2-8251bd75b68d"
+      }
+    }
   }
 }

@@ -61,11 +61,11 @@ export async function syncRenewalNotifications(subscriptions) {
 
         await Notifications.scheduleNotificationAsync({
             content: {
-                title: `${subscription.name} renews today`,
+                title: `${subscription.name} renews tomorrow`,
                 body: `${formatCurrency(
                     subscription.price,
                     subscription.currency || "USD"
-                )} ${subscription.billing || ""} payment is due today.`,
+                )} ${subscription.billing || ""} payment is due tomorrow.`,
                 data: {
                     subscriptionId: subscription.id,
                     url: "/subscriptions",
@@ -79,11 +79,11 @@ export async function syncRenewalNotifications(subscriptions) {
         });
         /*await Notifications.scheduleNotificationAsync({
             content: {
-                title: `${subscription.name} renews today`,
+                title: `${subscription.name} renews tomorrow`,
                 body: `${formatCurrency(
                     subscription.price,
                     subscription.currency || "USD"
-                )} ${subscription.billing || ""} payment is due today.`,
+                )} ${subscription.billing || ""} payment is due tomorrow.`,
                 data: {
                     subscriptionId: subscription.id,
                     url: "/subscriptions",
