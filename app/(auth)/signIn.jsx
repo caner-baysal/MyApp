@@ -14,7 +14,7 @@ import {
 import { StatusBar } from "expo-status-bar";
 
 export default function SignIn() {
-  const { signIn } = useSignIn();
+  const { signIn, setActive, isLoaded } = useSignIn();
   const router = useRouter();
 
   const [emailAddress, setEmailAddress] = useState("");
@@ -26,34 +26,29 @@ export default function SignIn() {
   const formIsValid = emailIsValid && password.length > 0;
 
   const handleSignIn = async () => {
-    if (!signIn || !formIsValid || isSubmitting) return;
+    if (!isLoaded || !signIn || !formIsValid || isSubmitting) return;
 
     setErrorMessage("");
     setIsSubmitting(true);
 
     try {
-      const result = await signIn.password({
+      const signInAttempt = await signIn.create({
         identifier: emailAddress.trim(),
         password,
       });
 
-      if (result?.error) {
-        throw result.error;
-      }
+      console.log("Sign in status:", signInAttempt.status);
 
-      if (signIn.status === "complete") {
-        await signIn.finalize({
-          navigate: ({ session }) => {
-            if (session?.currentTask) {
-             
-            }
-          },
+      if (signInAttempt.status === "complete") {
+        await setActive({
+          session: signInAttempt.createdSessionId,
         });
 
-        router.replace("/");
-      } else {
-        setErrorMessage("Please complete the remaining sign in steps.");
+        router.replace("/(tabs)");
+        return;
       }
+
+      setErrorMessage(`Please complete the remaining sign in steps. Status: ${signInAttempt.status}`);
     } catch (error) {
       const message =
         error?.errors?.[0]?.longMessage ||
@@ -263,7 +258,7 @@ export default function SignIn() {
 
           <Pressable
             onPress={handleSignIn}
-            disabled={!signIn || !formIsValid || isSubmitting}
+            disabled={!isLoaded ||!signIn || !formIsValid || isSubmitting}
             style={({ pressed }) => [
               {
                 marginTop: 32,
@@ -274,7 +269,7 @@ export default function SignIn() {
                 justifyContent: "center",
                 minHeight: 58,
               },
-              (!signIn || !formIsValid || isSubmitting) && {
+              (!isLoaded || !signIn || !formIsValid || isSubmitting) && {
                 opacity: 0.55,
               },
               pressed && {
