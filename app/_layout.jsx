@@ -4,7 +4,7 @@ import { Stack } from "expo-router";
 import { useFonts } from "expo-font";
 import { useEffect } from "react";
 import * as SplashScreen from "expo-splash-screen";
-import { SubscriptionsProvider } from "../context/SubscriptionsContext";
+//import { SubscriptionsProvider } from "../context/SubscriptionsContext";
 import { setAuthTokenGetter } from "../services/api";
 
 
@@ -41,15 +41,13 @@ function RootNavigator() {
   if (!fontsLoaded || !authLoaded) return null;
 
   return (
-    <SubscriptionsProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="onboarding" />
-        <Stack.Screen name="privacy-policy" />
-        <Stack.Screen name="terms-of-service" />
-      </Stack>
-    </SubscriptionsProvider>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="(auth)" />
+      <Stack.Screen name="onboarding" />
+      <Stack.Screen name="privacy-policy" />
+      <Stack.Screen name="terms-of-service" />
+    </Stack>
   );
 }
 
