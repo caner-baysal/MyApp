@@ -12,6 +12,7 @@
     },
     "android": {
       "package": "com.subshelf.app",
+      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/subshelf-logo.png",
         "backgroundColor": "#0D1F1A"
@@ -39,12 +40,12 @@
         "expo-font",
         {
           "fonts": [
-            "./assets/fonts/Sora-Regular.ttf",
-            "./assets/fonts/Sora-Bold.ttf",
-            "./assets/fonts/Sora-SemiBold.ttf",
-            "./assets/fonts/Sora-Medium.ttf",
-            "./assets/fonts/Sora-ExtraBold.ttf",
-            "./assets/fonts/Sora-Light.ttf"
+            "./assets/fonts/PlusJakartaSans-Regular.ttf",
+            "./assets/fonts/PlusJakartaSans-Bold.ttf",
+            "./assets/fonts/PlusJakartaSans-SemiBold.ttf",
+            "./assets/fonts/PlusJakartaSans-Medium.ttf",
+            "./assets/fonts/PlusJakartaSans-ExtraBold.ttf",
+            "./assets/fonts/PlusJakartaSans-Light.ttf"
           ]
         }
       ],
