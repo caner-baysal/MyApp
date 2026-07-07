@@ -14,7 +14,7 @@ import {
 import { StatusBar } from "expo-status-bar";
 
 export default function SignIn() {
-  const { signIn, setActive, isLoaded } = useSignIn();
+  const { signIn, setActive } = useSignIn();
   const router = useRouter();
 
   const [emailAddress, setEmailAddress] = useState("");
@@ -26,7 +26,7 @@ export default function SignIn() {
   const formIsValid = emailIsValid && password.length > 0;
 
   const handleSignIn = async () => {
-    if (!isLoaded || !signIn || !formIsValid || isSubmitting) return;
+    if (!signIn || !formIsValid || isSubmitting) return;
 
     setErrorMessage("");
     setIsSubmitting(true);
@@ -258,7 +258,7 @@ export default function SignIn() {
 
           <Pressable
             onPress={handleSignIn}
-            disabled={!isLoaded ||!signIn || !formIsValid || isSubmitting}
+            disabled={signIn || !formIsValid || isSubmitting}
             style={({ pressed }) => [
               {
                 marginTop: 32,
@@ -269,7 +269,7 @@ export default function SignIn() {
                 justifyContent: "center",
                 minHeight: 58,
               },
-              (!isLoaded || !signIn || !formIsValid || isSubmitting) && {
+              (!signIn || !formIsValid || isSubmitting) && {
                 opacity: 0.55,
               },
               pressed && {
