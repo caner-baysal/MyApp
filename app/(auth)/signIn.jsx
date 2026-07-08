@@ -32,23 +32,32 @@ export default function SignIn() {
     setIsSubmitting(true);
 
     try {
-      const signInAttempt = await signIn.create({
-        identifier: emailAddress.trim(),
+      const { error } = await signIn.password({
+        emailAddress: emailAddress.trim(),
         password,
       });
 
-      console.log("Sign in status:", signInAttempt.status);
+      if (error) {
+        throw error;
+      }
 
-      if (signInAttempt.status === "complete") {
+      console.log("Sign in state:", {
+        status: signIn.status,
+        createdSessionId: signIn.createdSessionId,
+      });
+
+      if (signIn.status === "complete" && signIn.createdSessionId) {
         await setActive({
-          session: signInAttempt.createdSessionId,
+          session: signIn.createdSessionId,
         });
 
         router.replace("/(tabs)");
         return;
       }
 
-      setErrorMessage(`Please complete the remaining sign in steps. Status: ${signInAttempt.status}`);
+      setErrorMessage(
+        `Please complete the remaining sign in steps. Status: ${signIn.status || "unknown"}`
+      );
     } catch (error) {
       const message =
         error?.errors?.[0]?.longMessage ||
@@ -56,6 +65,7 @@ export default function SignIn() {
         error?.message ||
         "Please check your details and try again.";
 
+      console.log("Sign in error:", error);
       setErrorMessage(message);
     } finally {
       setIsSubmitting(false);
