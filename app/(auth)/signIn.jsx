@@ -21,6 +21,8 @@ export default function SignIn() {
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [code, setCode] = useState("");
+  const [pendingClientTrust, setPendingClientTrust] = useState(false);
 
   const emailIsValid = /^\S+@\S+\.\S+$/.test(emailAddress.trim());
   const formIsValid = emailIsValid && password.length > 0;
@@ -55,6 +57,18 @@ export default function SignIn() {
         return;
       }
 
+      if (signIn.status === "needs_client_trust" || signIn.status === "needs_second_factor") {
+        const { error } = await signIn.emailCode.sendCode();
+
+        if (error) {
+          throw error;
+        }
+
+        setPendingClientTrust(true);
+        setErrorMessage("Enter the verification code sent to your email.");
+        return;
+      }
+
       setErrorMessage(
         `Please complete the remaining sign in steps. Status: ${signIn.status || "unknown"}`
       );
@@ -66,6 +80,52 @@ export default function SignIn() {
         "Please check your details and try again.";
 
       console.log("Sign in error:", error);
+      setErrorMessage(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!signIn || !code.trim() || isSubmitting) return;
+
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await signIn.emailCode.verifyCode({
+        code: code.trim(),
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      console.log("Client trust verification state:", {
+        status: signIn.status,
+        createdSessionId: signIn.createdSessionId,
+      });
+
+      if (signIn.status === "complete" && signIn.createdSessionId) {
+        await setActive({
+          session: signIn.createdSessionId,
+        });
+
+        router.replace("/(tabs)");
+        return;
+      }
+
+      setErrorMessage(
+        `Verification needs another step. Status: ${signIn.status || "unknown"}`
+      );
+    } catch (error) {
+      const message =
+        error?.errors?.[0]?.longMessage ||
+        error?.errors?.[0]?.message ||
+        error?.message ||
+        "We could not verify your code.";
+
+      console.log("Client trust verification error:", error);
       setErrorMessage(message);
     } finally {
       setIsSubmitting(false);
@@ -266,9 +326,44 @@ export default function SignIn() {
             </Text>
           )}
 
+          {pendingClientTrust && (
+            <>
+              <Text
+                style={{
+                  marginTop: 24,
+                  fontSize: 18,
+                  fontFamily: "sans-bold",
+                  color: "#081126",
+                  marginBottom: 12,
+                }}
+              >
+                Verification code
+              </Text>
+
+              <TextInput
+                value={code}
+                onChangeText={setCode}
+                placeholder="Enter your code"
+                placeholderTextColor="rgba(8, 17, 38, 0.55)"
+                keyboardType="number-pad"
+                autoCapitalize="none"
+                style={{
+                  borderWidth: 1,
+                  borderColor: "rgba(8, 17, 38, 0.22)",
+                  borderRadius: 18,
+                  paddingHorizontal: 18,
+                  paddingVertical: 16,
+                  fontSize: 18,
+                  fontFamily: "sans-semibold",
+                  color: "#081126",
+                }}
+              />
+            </>
+          )}
+
           <Pressable
-            onPress={handleSignIn}
-            disabled={!signIn || !formIsValid || isSubmitting}
+            onPress={pendingClientTrust ? handleVerifyCode : handleSignIn}
+            disabled={!signIn || isSubmitting || (!pendingClientTrust && !formIsValid) || (pendingClientTrust && code.trim().length < 4)}
             style={({ pressed }) => [
               {
                 marginTop: 32,
@@ -297,7 +392,7 @@ export default function SignIn() {
                   fontFamily: "sans-bold",
                 }}
               >
-                Sign in
+                {pendingClientTrust ? "Verify code" : "Sign in"}
               </Text>
             )}
           </Pressable>
