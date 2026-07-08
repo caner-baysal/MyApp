@@ -6,7 +6,7 @@ import {
   updateSubscription as updateSubscriptionRequest,
   updateSubscriptionStatus as updateSubscriptionStatusRequest,
 } from "../services/subscriptionsApi";
-//import { syncRenewalNotifications } from "../services/notifications";
+import { syncRenewalNotifications } from "../services/notifications";
 
 const SubscriptionsContext = createContext(null);
 
@@ -32,7 +32,6 @@ export function SubscriptionsProvider({ children }) {
     loadSubscriptions();
   }, []);
 
-  /*
   useEffect(() => {
     if(!isLoadingSubscriptions) {
       syncRenewalNotifications(subscriptions).catch((error) => {
@@ -40,7 +39,6 @@ export function SubscriptionsProvider({ children }) {
       });
     }
   }, [subscriptions, isLoadingSubscriptions]);
-  */
 
   const addSubscription = async (subscription) => {
     const createdSubscription = await createSubscriptionRequest(subscription);

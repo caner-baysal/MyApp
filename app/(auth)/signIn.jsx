@@ -1,5 +1,5 @@
 import { useSignIn } from "@clerk/expo";
-import { Link, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -258,7 +258,7 @@ export default function SignIn() {
 
           <Pressable
             onPress={handleSignIn}
-            disabled={signIn || !formIsValid || isSubmitting}
+            disabled={!signIn || !formIsValid || isSubmitting}
             style={({ pressed }) => [
               {
                 marginTop: 32,
@@ -311,19 +311,17 @@ export default function SignIn() {
               New to Subshelf?
             </Text>
 
-            <Link href="/(auth)/signUp" asChild>
-              <Pressable>
-                <Text
-                  style={{
-                    color: "#ea7a53",
-                    fontSize: 16,
-                    fontFamily: "sans-bold",
-                  }}
-                >
-                  Create an account
-                </Text>
-              </Pressable>
-            </Link>
+            <Pressable onPress={() => router.push("/(auth)/signUp")}>
+              <Text
+                style={{
+                  color: "#ea7a53",
+                  fontSize: 16,
+                  fontFamily: "sans-bold",
+                }}
+              >
+                Create an account
+              </Text>
+            </Pressable>
           </View>
         </View>
       </ScrollView>

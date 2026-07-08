@@ -1,6 +1,6 @@
 import { useSignUp } from "@clerk/expo";
 import { StatusBar } from "expo-status-bar";
-import { Link, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -461,7 +461,6 @@ export default function SignUp() {
                   {errorMessage}
                 </Text>
               )}
-              <View nativeID="clerk-captcha" id="clerk-captcha" />
               <Pressable
                 onPress={handleCreateAccount}
                 disabled={isSubmitting}
@@ -517,19 +516,17 @@ export default function SignUp() {
                   Already have an account?
                 </Text>
 
-                <Link href="/(auth)/signIn" asChild>
-                  <Pressable>
-                    <Text
-                      style={{
-                        color: "#ea7a53",
-                        fontSize: 16,
-                        fontFamily: "sans-bold",
-                      }}
-                    >
-                      Sign in
-                    </Text>
-                  </Pressable>
-                </Link>
+                <Pressable onPress={() => router.push("/(auth)/signIn")}>
+                  <Text
+                    style={{
+                      color: "#ea7a53",
+                      fontSize: 16,
+                      fontFamily: "sans-bold",
+                    }}
+                  >
+                    Sign in
+                  </Text>
+                </Pressable>
               </View>
             </>
           )}
