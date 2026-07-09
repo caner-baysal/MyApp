@@ -1,3 +1,4 @@
+import { useAuth } from "@clerk/expo";
 import { createContext, useContext, useEffect, useState } from "react";
 import {
   createSubscription as createSubscriptionRequest,
@@ -6,16 +7,41 @@ import {
   updateSubscription as updateSubscriptionRequest,
   updateSubscriptionStatus as updateSubscriptionStatusRequest,
 } from "../services/subscriptionsApi";
+import { setAuthTokenGetter } from "../services/api";
 import { syncRenewalNotifications } from "../services/notifications";
 
 const SubscriptionsContext = createContext(null);
 
 export function SubscriptionsProvider({ children }) {
+  const { isLoaded: authLoaded, isSignedIn, getToken } = useAuth();
+
   const [subscriptions, setSubscriptions] = useState([]);
   const [isLoadingSubscriptions, setIsLoadingSubscriptions] = useState(true);
   const [subscriptionsError, setSubscriptionsError] = useState("");
 
+  useEffect(() => {
+    setAuthTokenGetter(async () => {
+      if (!authLoaded || !isSignedIn) {
+        return null;
+      }
+
+      return getToken();
+    });
+  }, [authLoaded, isSignedIn, getToken]);
+
   const loadSubscriptions = async () => {
+    if (!authLoaded) {
+      return;
+    }
+
+    if (!isSignedIn) {
+      setSubscriptions([]);
+      setSubscriptionsError("");
+      setIsLoadingSubscriptions(false);
+      return;
+    }
+
+    setIsLoadingSubscriptions(true);
     setSubscriptionsError("");
 
     try {
@@ -30,15 +56,15 @@ export function SubscriptionsProvider({ children }) {
 
   useEffect(() => {
     loadSubscriptions();
-  }, []);
+  }, [authLoaded, isSignedIn]);
 
   useEffect(() => {
-    if(!isLoadingSubscriptions) {
+    if (!isLoadingSubscriptions && isSignedIn) {
       syncRenewalNotifications(subscriptions).catch((error) => {
         console.log("Notification sync error:", error);
       });
     }
-  }, [subscriptions, isLoadingSubscriptions]);
+  }, [subscriptions, isLoadingSubscriptions, isSignedIn]);
 
   const addSubscription = async (subscription) => {
     const createdSubscription = await createSubscriptionRequest(subscription);
