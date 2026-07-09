@@ -23,6 +23,7 @@ export default function SignIn() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [code, setCode] = useState("");
   const [pendingClientTrust, setPendingClientTrust] = useState(false);
+  const [pendingVerificationType, setPendingVerificationType] = useState(null);
 
   const emailIsValid = /^\S+@\S+\.\S+$/.test(emailAddress.trim());
   const formIsValid = emailIsValid && password.length > 0;
@@ -46,31 +47,56 @@ export default function SignIn() {
       console.log("Sign in state:", {
         status: signIn.status,
         createdSessionId: signIn.createdSessionId,
+        emailCodeSendCode: typeof signIn?.emailCode?.sendCode,
+        mfaSendEmailCode: typeof signIn?.mfa?.sendEmailCode,
+        finalizeType: typeof signIn?.finalize,
       });
 
-      if (signIn.status === "complete" && signIn.createdSessionId) {
-        await setActive({
-          session: signIn.createdSessionId,
-        });
+      if (signIn.status === "complete") {
+        const finalizeResult = await signIn.finalize();
 
+        if (finalizeResult?.error) {
+          throw finalizeResult.error;
+        }
+
+        setPendingClientTrust(false);
+        setPendingVerificationType(null);
+        setCode("");
         router.replace("/(tabs)");
         return;
       }
 
-      if (signIn.status === "needs_client_trust" || signIn.status === "needs_second_factor") {
-        const { error } = await signIn.emailCode.sendCode();
+      if (signIn.status === "needs_client_trust") {
+        const codeResult = await signIn.emailCode.sendCode();
 
-        if (error) {
-          throw error;
+        if (codeResult?.error) {
+          throw codeResult.error;
         }
 
+        setCode("");
         setPendingClientTrust(true);
+        setPendingVerificationType("client_trust");
+        setErrorMessage("Enter the verification code sent to your email.");
+        return;
+      }
+
+      if (signIn.status === "needs_second_factor") {
+        const codeResult = await signIn.mfa.sendEmailCode();
+
+        if (codeResult?.error) {
+          throw codeResult.error;
+        }
+
+        setCode("");
+        setPendingClientTrust(true);
+        setPendingVerificationType("mfa");
         setErrorMessage("Enter the verification code sent to your email.");
         return;
       }
 
       setErrorMessage(
-        `Please complete the remaining sign in steps. Status: ${signIn.status || "unknown"}`
+        `Please complete the remaining sign in steps. Status: ${signIn.status || "unknown"
+        }`
       );
     } catch (error) {
       const message =
@@ -93,30 +119,47 @@ export default function SignIn() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await signIn.emailCode.verifyCode({
-        code: code.trim(),
-      });
+      let verifyResult;
 
-      if (error) {
-        throw error;
+      if (pendingVerificationType === "client_trust") {
+        verifyResult = await signIn.emailCode.verifyCode({
+          code: code.trim(),
+        });
+      } else if (pendingVerificationType === "mfa") {
+        verifyResult = await signIn.mfa.verifyEmailCode({
+          code: code.trim(),
+        });
+      } else {
+        throw new Error("Verification flow was not started.");
       }
 
-      console.log("Client trust verification state:", {
+      if (verifyResult?.error) {
+        throw verifyResult.error;
+      }
+
+      console.log("Verification result:", {
         status: signIn.status,
         createdSessionId: signIn.createdSessionId,
+        finalizeType: typeof signIn?.finalize,
       });
 
-      if (signIn.status === "complete" && signIn.createdSessionId) {
-        await setActive({
-          session: signIn.createdSessionId,
-        });
+      if (typeof signIn.finalize === "function") {
+        const finalizeResult = await signIn.finalize();
 
+        if (finalizeResult?.error) {
+          throw finalizeResult.error;
+        }
+
+        setPendingClientTrust(false);
+        setPendingVerificationType(null);
+        setCode("");
         router.replace("/(tabs)");
         return;
       }
 
       setErrorMessage(
-        `Verification needs another step. Status: ${signIn.status || "unknown"}`
+        `Verification completed, but session could not be finalized. Status: ${signIn.status || "unknown"
+        }`
       );
     } catch (error) {
       const message =
@@ -130,6 +173,79 @@ export default function SignIn() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const completeSignIn = async () => {
+    console.log("Completing sign in:", {
+      status: signIn?.status,
+      createdSessionId: signIn?.createdSessionId,
+      finalizeType: typeof signIn?.finalize,
+      setActiveType: typeof setActive,
+    });
+
+    if (signIn?.status !== "complete") {
+      return false;
+    }
+
+    if (typeof signIn.finalize === "function") {
+      const { error } = await signIn.finalize();
+
+      if (error) {
+        throw error;
+      }
+
+      router.replace("/(tabs)");
+      return true;
+    }
+
+    if (typeof setActive === "function" && signIn.createdSessionId) {
+      await setActive({ session: signIn.createdSessionId });
+      router.replace("/(tabs)");
+      return true;
+    }
+
+    setErrorMessage("Sign in completed, but session could not be activated.");
+    return false;
+  };
+
+  const sendClientTrustCode = async () => {
+    console.log("Client trust methods:", {
+      mfaSendEmailCode: typeof signIn?.mfa?.sendEmailCode,
+      emailCodeSendCode: typeof signIn?.emailCode?.sendCode,
+    });
+
+    if (typeof signIn?.mfa?.sendEmailCode === "function") {
+      return await signIn.mfa.sendEmailCode();
+    }
+
+    if (typeof signIn?.emailCode?.sendCode === "function") {
+      return await signIn.emailCode.sendCode({
+        emailAddress: emailAddress.trim(),
+      });
+    }
+
+    throw new Error("No email verification method is available for this sign-in.");
+  };
+
+  const verifyClientTrustCode = async () => {
+    console.log("Client trust verify methods:", {
+      mfaVerifyEmailCode: typeof signIn?.mfa?.verifyEmailCode,
+      emailCodeVerifyCode: typeof signIn?.emailCode?.verifyCode,
+    });
+
+    if (typeof signIn?.mfa?.verifyEmailCode === "function") {
+      return await signIn.mfa.verifyEmailCode({
+        code: code.trim(),
+      });
+    }
+
+    if (typeof signIn?.emailCode?.verifyCode === "function") {
+      return await signIn.emailCode.verifyCode({
+        code: code.trim(),
+      });
+    }
+
+    throw new Error("No email code verification method is available.");
   };
 
   return (
